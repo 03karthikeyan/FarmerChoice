@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "136305190932",
+    "project_id": "farmer-choice-60e9d",
+    "storage_bucket": "farmer-choice-60e9d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:136305190932:android:80dad8888261cb12609f01",
+        "android_client_info": {
+          "package_name": "com.mediawave.farmerchoice"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpdEAlXf2P2tnciBpSEbMP7PlUvWa1aBM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
