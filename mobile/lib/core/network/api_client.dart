@@ -8,22 +8,31 @@ class ApiClient {
 
   late Dio dio;
 
-  // Server Host IP for local machine / Wi-Fi connected devices
-  static const String serverHost = '192.168.1.38:5000';
+  // Set to true to use the live cloud backend (https://farmerchoice.onrender.com)
+  static const bool isProduction = true;
+
+  // Live Cloud Server on Render
+  static const String liveServerHost = 'farmerchoice.onrender.com';
+  // Local Development Server (Wi-Fi IP or localhost)
+  static const String localServerHost = '192.168.1.38:5000';
 
   static String get baseUrl {
-    if (kIsWeb) {
+    if (isProduction) {
+      return 'https://$liveServerHost/api/v1';
+    } else if (kIsWeb) {
       return 'http://localhost:5000/api/v1';
     } else {
-      return 'http://$serverHost/api/v1';
+      return 'http://$localServerHost/api/v1';
     }
   }
 
   static String get socketUrl {
-    if (kIsWeb) {
+    if (isProduction) {
+      return 'https://$liveServerHost';
+    } else if (kIsWeb) {
       return 'http://localhost:5000';
     } else {
-      return 'http://$serverHost';
+      return 'http://$localServerHost';
     }
   }
 
