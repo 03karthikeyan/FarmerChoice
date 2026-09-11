@@ -537,3 +537,147 @@ exports.getAuditLogs = async (req, res, next) => {
     next(error);
   }
 };
+
+// 11. Admin & Super Admin Management
+exports.getAdmins = async (req, res, next) => {
+  try {
+    const admins = await User.find({
+      role: { $in: [UserRoles.ADMIN, UserRoles.SUPER_ADMIN] }
+    })
+      .select('-passwordHash')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: admins.length,
+      data: admins
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.createAdmin = async (req, res, next) => {
+  try {
+    const { name, phone, email, password, role } = req.body;
+    const adminId = req.user._id;
+
+    if (!name || !phone || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, phone number, and password are required.'
+      });
+    }
+
+    const assignedRole = role === 'SUPER_ADMIN' ? UserRoles.SUPER_ADMIN : UserRoles.ADMIN;
+
+    const existingUser = await User.findOne({
+      $or: [{ phone: phone.trim() }, ...(email ? [{ email: email.trim().toLowerCase() }] : [])]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'A user with this phone or email already exists.'
+      });
+    }
+
+    const passwordHash = await User.hashPassword(password);
+    const newAdmin = await User.create({
+      name: name.trim(),
+      phone: phone.trim(),
+      email: email ? email.trim().toLowerCase() : '',
+      passwordHash,
+      role: assignedRole,
+      status: UserStatus.ACTIVE,
+      isVerified: true
+    });
+
+    await logAdminAction(adminId, 'CREATE_ADMIN', 'User', newAdmin._id, { role: assignedRole, email: newAdmin.email }, req.ip);
+
+    res.status(201).json({
+      success: true,
+      message: `${assignedRole === UserRoles.SUPER_ADMIN ? 'Super Admin' : 'Admin'} account created successfully.`,
+      data: newAdmin
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.updateAdmin = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, phone, email, password, role, status } = req.body;
+    const adminId = req.user._id;
+
+    const adminUser = await User.findById(id);
+    if (!adminUser) {
+      return res.status(404).json({ success: false, message: 'Admin not found.' });
+    }
+
+    if (name) adminUser.name = name.trim();
+    if (phone) adminUser.phone = phone.trim();
+    if (email !== undefined) adminUser.email = email.trim().toLowerCase();
+    if (role && [UserRoles.ADMIN, UserRoles.SUPER_ADMIN].includes(role)) {
+      adminUser.role = role;
+    }
+    if (status && Object.values(UserStatus).includes(status)) {
+      adminUser.status = status;
+    }
+    if (password && password.trim().length >= 6) {
+      adminUser.passwordHash = await User.hashPassword(password.trim());
+    }
+
+    await adminUser.save();
+
+    await logAdminAction(adminId, 'UPDATE_ADMIN', 'User', adminUser._id, { role: adminUser.role, status: adminUser.status }, req.ip);
+
+    res.status(200).json({
+      success: true,
+      message: 'Admin updated successfully.',
+      data: adminUser
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.deleteAdmin = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const adminId = req.user._id;
+
+    if (id.toString() === adminId.toString()) {
+      return res.status(400).json({ success: false, message: 'You cannot delete your own admin account.' });
+    }
+
+    const adminUser = await User.findById(id);
+    if (!adminUser) {
+      return res.status(404).json({ success: false, message: 'Admin not found.' });
+    }
+
+    // Check if it's the only super admin
+    if (adminUser.role === UserRoles.SUPER_ADMIN) {
+      const superAdminCount = await User.countDocuments({ role: UserRoles.SUPER_ADMIN });
+      if (superAdminCount <= 1) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot delete the only Super Admin account on the platform.'
+        });
+      }
+    }
+
+    await User.findByIdAndDelete(id);
+
+    await logAdminAction(adminId, 'DELETE_ADMIN', 'User', id, { deletedEmail: adminUser.email }, req.ip);
+
+    res.status(200).json({
+      success: true,
+      message: 'Admin account deleted successfully.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

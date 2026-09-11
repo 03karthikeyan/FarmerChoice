@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/models/farmer_profile_model.dart';
 import '../../../core/models/vegetable_model.dart';
 import '../../../core/models/review_model.dart';

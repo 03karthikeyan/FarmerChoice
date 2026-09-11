@@ -21,26 +21,11 @@ const seedDatabase = async () => {
     await mongoose.connect(mongoUri);
     console.log('[Seed] Connected to MongoDB');
 
-    // Clean existing collections
-    await Promise.all([
-      User.deleteMany({}),
-      FarmerProfile.deleteMany({}),
-      CustomerProfile.deleteMany({}),
-      Vegetable.deleteMany({}),
-      Deal.deleteMany({}),
-      Review.deleteMany({}),
-      Conversation.deleteMany({}),
-      Message.deleteMany({}),
-      Notification.deleteMany({}),
-      Favorite.deleteMany({})
-    ]);
-    console.log('[Seed] Cleared all existing demo/static data');
-
     const defaultPassword = 'password123';
     const passwordHash = await User.hashPassword(defaultPassword);
 
-    // 1. Create Super Admin ONLY (All other data is added dynamically via app)
-    const admin = await User.create({
+    // 1. Create or Update Super Admin in MongoDB
+    const adminData = {
       name: 'Super Admin',
       phone: '9999999999',
       email: 'admin@farmerchoice.in',
@@ -49,15 +34,25 @@ const seedDatabase = async () => {
       profileImage: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
       status: UserStatus.ACTIVE,
       isVerified: true
-    });
+    };
+
+    const admin = await User.findOneAndUpdate(
+      { $or: [{ role: UserRoles.SUPER_ADMIN }, { phone: '9999999999' }, { email: 'admin@farmerchoice.in' }] },
+      { $set: adminData },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
     console.log('==============================================');
-    console.log('✅ Farmer Choice Database Seeded (Super Admin Only)!');
-    console.log('👥 Admin Account:');
-    console.log('   Email: admin@farmerchoice.in');
-    console.log('   Phone: 9999999999');
-    console.log('   Password: password123');
-    console.log('🌱 All Farmers, Customers & Vegetables will be added via Mobile App.');
+    console.log('✅ Farmer Choice Super Admin Updated / Created in MongoDB!');
+    console.log('👥 Admin Account Details:');
+    console.log(`   ID: ${admin._id}`);
+    console.log('   Name: ' + admin.name);
+    console.log('   Email: ' + admin.email);
+    console.log('   Phone: ' + admin.phone);
+    console.log('   Password: ' + defaultPassword);
+    console.log('   Role: ' + admin.role);
+    console.log('   Status: ' + admin.status);
+    console.log('   Verified: ' + admin.isVerified);
     console.log('==============================================');
 
     process.exit(0);

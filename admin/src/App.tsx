@@ -12,6 +12,7 @@ import { Reports } from './pages/Reports';
 import { SupportTickets } from './pages/SupportTickets';
 import { Analytics } from './pages/Analytics';
 import { AuditLogs } from './pages/AuditLogs';
+import { Admins } from './pages/Admins';
 import { Login } from './pages/Login';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -45,6 +46,7 @@ export const App: React.FC = () => {
             <Route path="support" element={<SupportTickets />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="audit-logs" element={<AuditLogs />} />
+            <Route path="admins" element={<Admins />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

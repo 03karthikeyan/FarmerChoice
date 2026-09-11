@@ -11,6 +11,7 @@ import {
   HelpCircle,
   BarChart3,
   ShieldAlert,
+  ShieldCheck,
   LogOut,
   Sprout
 } from 'lucide-react';
@@ -30,6 +31,7 @@ export const Sidebar: React.FC = () => {
     { name: 'Support Tickets', path: '/support', icon: HelpCircle },
     { name: 'Market Analytics', path: '/analytics', icon: BarChart3 },
     { name: 'Audit Logs', path: '/audit-logs', icon: ShieldAlert },
+    { name: 'Admin & Staff', path: '/admins', icon: ShieldCheck },
   ];
 
   return (

@@ -237,38 +237,43 @@ class FarmerProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: AppColors.borderLight),
               ),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.help_outline, color: Color(0xFF176B2C)),
-                    title: const Text('Farmer Support Center', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportScreen()));
-                    },
-                  ),
-                  const Divider(height: 1, color: AppColors.borderLight),
-                  ListTile(
-                    leading: const Icon(Icons.shield_outlined, color: Color(0xFF176B2C)),
-                    title: const Text('Payment Safety Notice', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                    subtitle: const Text('Zero commission marketplace reminder', style: TextStyle(fontSize: 11)),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: const Text('Farmer Choice Policy'),
-                          content: const Text(
-                            'Farmer Choice is 100% free.\n\nWe never take transaction fees or subscription charges. Customers pay you directly upon delivery or pickup.',
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.help_outline, color: Color(0xFF176B2C)),
+                      title: const Text('Farmer Support Center', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportScreen()));
+                      },
+                    ),
+                    const Divider(height: 1, color: AppColors.borderLight),
+                    ListTile(
+                      leading: const Icon(Icons.shield_outlined, color: Color(0xFF176B2C)),
+                      title: const Text('Payment Safety Notice', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                      subtitle: const Text('Zero commission marketplace reminder', style: TextStyle(fontSize: 11)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text('Farmer Choice Policy'),
+                            content: const Text(
+                              'Farmer Choice is 100% free.\n\nWe never take transaction fees or subscription charges. Customers pay you directly upon delivery or pickup.',
+                            ),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+                            ],
                           ),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 24),

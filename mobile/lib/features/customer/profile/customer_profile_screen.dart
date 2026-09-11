@@ -218,44 +218,49 @@ class CustomerProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: AppColors.borderLight),
               ),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.help_outline, color: Color(0xFF176B2C)),
-                    title: const Text('Help & Support Tickets', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportScreen()));
-                    },
-                  ),
-                  const Divider(height: 1, color: AppColors.borderLight),
-                  ListTile(
-                    leading: const Icon(Icons.shield_outlined, color: Color(0xFF176B2C)),
-                    title: const Text('Safety & Guidelines', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                    subtitle: const Text('Direct payment & meeting advice', style: TextStyle(fontSize: 11)),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: const Text('Farmer Choice Safety Rules'),
-                          content: const Text(
-                            '1. Farmer Choice never processes money.\n2. Always verify vegetables before cash or direct UPI payment.\n3. Never share passwords or bank OTPs with anyone.',
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.help_outline, color: Color(0xFF176B2C)),
+                      title: const Text('Help & Support Tickets', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportScreen()));
+                      },
+                    ),
+                    const Divider(height: 1, color: AppColors.borderLight),
+                    ListTile(
+                      leading: const Icon(Icons.shield_outlined, color: Color(0xFF176B2C)),
+                      title: const Text('Safety & Guidelines', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                      subtitle: const Text('Direct payment & meeting advice', style: TextStyle(fontSize: 11)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text('Farmer Choice Safety Rules'),
+                            content: const Text(
+                              '1. Farmer Choice never processes money.\n2. Always verify vegetables before cash or direct UPI payment.\n3. Never share passwords or bank OTPs with anyone.',
+                            ),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(context), child: const Text('I Understand')),
+                            ],
                           ),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('I Understand')),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  const Divider(height: 1, color: AppColors.borderLight),
-                  ListTile(
-                    leading: const Icon(Icons.translate, color: Color(0xFF176B2C)),
-                    title: const Text('Language / மொழி', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                    trailing: const Text('English / தமிழ்', style: TextStyle(fontSize: 12, color: Color(0xFF176B2C), fontWeight: FontWeight.w700)),
-                  ),
-                ],
+                        );
+                      },
+                    ),
+                    const Divider(height: 1, color: AppColors.borderLight),
+                    const ListTile(
+                      leading: Icon(Icons.translate, color: Color(0xFF176B2C)),
+                      title: Text('Language / மொழி', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                      trailing: Text('English / தமிழ்', style: TextStyle(fontSize: 12, color: Color(0xFF176B2C), fontWeight: FontWeight.w700)),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 24),

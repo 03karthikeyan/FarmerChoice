@@ -23,6 +23,25 @@ app.use('/api', apiLimiter);
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// Root & Health Check for Cloud / Render
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: '🌱 Farmer Choice Direct Marketplace Backend API is live!',
+    version: '1.0.0',
+    docs: '/api/v1',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 // Routes
 app.use('/api/v1', routes);
 

@@ -35,7 +35,14 @@ router.patch('/reports/:id/resolve', adminController.resolveReport);
 router.get('/support', adminController.getSupportTickets);
 router.patch('/support/:id', adminController.updateSupportTicket);
 
+// Admin / Super Admin Staff Management
+router.get('/admins', adminController.getAdmins);
+router.post('/admins', adminController.createAdmin);
+router.patch('/admins/:id', adminController.updateAdmin);
+router.delete('/admins/:id', adminController.deleteAdmin);
+
 // Audit
 router.get('/audit-logs', adminController.getAuditLogs);
 
 module.exports = router;
+
