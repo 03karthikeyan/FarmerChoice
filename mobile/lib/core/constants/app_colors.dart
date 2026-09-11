@@ -20,6 +20,7 @@ class AppColors {
   static const Color orangeDeal = Color(0xFFE65100);
   static const Color blueAction = Color(0xFF1976D2);
   static const Color dangerRed = Color(0xFFD32F2F);
+  static const Color accentRed = Color(0xFFE53935);
 
   // Text Colors
   static const Color textDark = Color(0xFF1B2E1E);

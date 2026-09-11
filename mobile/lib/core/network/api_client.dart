@@ -8,12 +8,13 @@ class ApiClient {
 
   late Dio dio;
 
-  // Set to true to use the live cloud backend (https://farmerchoice.onrender.com)
-  static const bool isProduction = true;
+  // Switch to true when deploying/using the live cloud backend on Render.
+  // Set to false for local testing with backend running on your PC.
+  static const bool isProduction = false;
 
   // Live Cloud Server on Render
   static const String liveServerHost = 'farmerchoice.onrender.com';
-  // Local Development Server (Wi-Fi IP or localhost)
+  // Local Development Server (Wi-Fi IP or localhost with ADB)
   static const String localServerHost = '192.168.1.38:5000';
 
   static String get baseUrl {

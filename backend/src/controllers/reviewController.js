@@ -1,6 +1,7 @@
 const Review = require('../models/Review');
 const Deal = require('../models/Deal');
 const FarmerProfile = require('../models/FarmerProfile');
+const notificationService = require('../services/notificationService');
 const { DealStatus } = require('../constants');
 
 // Submit Verified Review
@@ -91,6 +92,17 @@ exports.createReview = async (req, res, next) => {
       .populate('customerId', 'name profileImage')
       .populate('vegetableId', 'name');
 
+    // Notify farmer of new verified review
+    await notificationService.sendNotification({
+      userId: deal.farmerId,
+      title: 'New Verified Review! ⭐',
+      body: `A customer gave you a ${numRating}-star review for deal #${deal.dealNumber}`,
+      type: 'REVIEW_RECEIVED',
+      referenceId: review._id,
+      referenceType: 'Review',
+      data: { reviewId: review._id.toString(), farmerId: deal.farmerId.toString() }
+    });
+
     res.status(201).json({
       success: true,
       message: 'Verified review submitted successfully. Thank you for supporting our farmers!',
@@ -145,10 +157,56 @@ exports.replyToReview = async (req, res, next) => {
     review.farmerRepliedAt = new Date();
     await review.save();
 
+    // Notify customer of farmer reply
+    await notificationService.sendNotification({
+      userId: review.customerId,
+      title: 'Farmer Replied to Your Review 💬',
+      body: `The farmer replied: "${reply.slice(0, 80)}${reply.length > 80 ? '...' : ''}"`,
+      type: 'REVIEW_REPLIED',
+      referenceId: review._id,
+      referenceType: 'Review',
+      data: { reviewId: review._id.toString() }
+    });
+
     res.status(200).json({
       success: true,
       message: 'Reply posted.',
       data: review
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Customer: Check if eligible to review a farmer (must have completed un-reviewed deal)
+exports.checkReviewEligibility = async (req, res, next) => {
+  try {
+    const customerId = req.user._id;
+    const { farmerId } = req.params;
+
+    // Find any completed deal with this farmer where customer hasn't submitted a review yet
+    const completedDeal = await Deal.findOne({
+      customerId,
+      farmerId,
+      status: DealStatus.COMPLETED,
+      hasReview: false
+    })
+      .populate('vegetableId', 'name priceUnit images')
+      .populate('farmerId', 'name profileImage')
+      .sort({ updatedAt: -1 });
+
+    if (!completedDeal) {
+      return res.status(200).json({
+        success: true,
+        canReview: false,
+        message: 'Verified reviews are only accessible after completing and confirming a direct deal.'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      canReview: true,
+      deal: completedDeal
     });
   } catch (error) {
     next(error);

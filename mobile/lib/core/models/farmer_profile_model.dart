@@ -55,4 +55,25 @@ class FarmerProfileModel {
       farmPhotos: json['farmPhotos'] != null ? List<String>.from(json['farmPhotos']) : [],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'userId': userId,
+      'farmName': farmName,
+      'village': village,
+      'taluk': taluk,
+      'district': district,
+      'state': state,
+      'farmAddress': farmAddress,
+      'aboutMe': aboutMe,
+      'rating': rating,
+      'totalReviews': totalReviews,
+      'completedDealsCount': completedDealsCount,
+      'isOrganicCertified': isOrganicCertified,
+      'verificationStatus': verificationStatus,
+      'badges': badges,
+      'farmPhotos': farmPhotos,
+    };
+  }
 }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/models/farmer_profile_model.dart';
 import '../../../core/models/vegetable_model.dart';
 import '../../../core/models/review_model.dart';
+import '../../../core/models/deal_model.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/chat_provider.dart';
@@ -10,6 +11,7 @@ import '../../../core/widgets/verified_badge.dart';
 import '../../../core/widgets/vegetable_card.dart';
 import '../chat/chat_screen.dart';
 import '../vegetables/vegetable_detail_screen.dart';
+import '../reviews/add_review_screen.dart';
 
 class FarmerProfileScreen extends StatefulWidget {
   final String farmerId;
@@ -25,6 +27,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
   Map<String, dynamic>? _farmerUser;
   List<VegetableModel> _vegetables = [];
   List<ReviewModel> _reviews = [];
+  DealModel? _eligibleDeal;
   bool _isLoading = true;
 
   @override
@@ -34,27 +37,47 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
   }
 
   Future<void> _fetchFarmerDetails() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isCustomer = authProvider.isCustomer;
+
     try {
       final res = await ApiClient().dio.get('/farmers/${widget.farmerId}');
       if (res.data['success'] == true) {
         final data = res.data['data'];
-        setState(() {
-          _profile = FarmerProfileModel.fromJson(data['profile']);
-          _farmerUser = data['profile']['userId'];
-          if (data['vegetables'] != null) {
-            final List list = data['vegetables'];
-            _vegetables = list.map((j) => VegetableModel.fromJson(j)).toList();
-          }
-          if (data['reviews'] != null) {
-            final List list = data['reviews'];
-            _reviews = list.map((j) => ReviewModel.fromJson(j)).toList();
-          }
-          _isLoading = false;
-        });
+        
+        // Check if customer has an eligible completed deal
+        DealModel? dealObj;
+        if (isCustomer) {
+          try {
+            final eligRes = await ApiClient().dio.get('/reviews/eligible-deal/${widget.farmerId}');
+            if (eligRes.data['success'] == true &&
+                eligRes.data['canReview'] == true &&
+                eligRes.data['deal'] != null) {
+              dealObj = DealModel.fromJson(eligRes.data['deal']);
+            }
+          } catch (_) {}
+        }
+
+        if (mounted) {
+          setState(() {
+            _profile = FarmerProfileModel.fromJson(data['profile']);
+            _farmerUser = data['profile']['userId'];
+            _eligibleDeal = dealObj;
+            if (data['vegetables'] != null) {
+              final List list = data['vegetables'];
+              _vegetables = list.map((j) => VegetableModel.fromJson(j)).toList();
+            }
+            if (data['reviews'] != null) {
+              final List list = data['reviews'];
+              _reviews = list.map((j) => ReviewModel.fromJson(j)).toList();
+            }
+            _isLoading = false;
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error fetching farmer profile: $e');
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -102,44 +125,17 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7FAF7),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(farmerName, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+      ),
       body: CustomScrollView(
         slivers: [
-          // 1. Premium App Bar
-          SliverAppBar(
-            expandedHeight: 140,
-            pinned: true,
-            elevation: 0,
-            backgroundColor: const Color(0xFF145523),
-            leading: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: CircleAvatar(
-                backgroundColor: Colors.white,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Color(0xFF145523), size: 20),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-            ),
-            title: Text(
-              farmerName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-              ),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF0F421A), Color(0xFF1E7E34)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-              ),
-            ),
-          ),
 
           // 2. Main Profile Content
           SliverToBoxAdapter(
@@ -158,7 +154,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                       border: Border.all(color: const Color(0xFFE2EBE2)),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withValues(alpha: 0.04),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -208,8 +204,10 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      const SizedBox(width: 6),
-                                      const VerifiedBadge(isSmall: true),
+                                      VerifiedBadge(
+                                        status: _profile?.verificationStatus ?? 'PENDING',
+                                        isSmall: true,
+                                      ),
                                     ],
                                   ),
                                   const SizedBox(height: 3),
@@ -428,6 +426,70 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
                   ),
                   const SizedBox(height: 12),
 
+                  if (_eligibleDeal != null)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F8F1),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFC8E6C9), width: 1.2),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF176B2C),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.rate_review_rounded, color: Colors.white, size: 18),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Completed Deal Ready for Review',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF145523),
+                                  ),
+                                ),
+                                Text(
+                                  'Deal #${_eligibleDeal!.dealNumber} • ${_eligibleDeal!.vegetable?.name ?? 'Produce'}',
+                                  style: const TextStyle(fontSize: 11, color: Color(0xFF4A5D4E)),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => AddReviewScreen(deal: _eligibleDeal!),
+                                ),
+                              );
+                              _fetchFarmerDetails();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF176B2C),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              'Write Review',
+                              style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                   if (_reviews.isEmpty)
                     Container(
                       width: double.infinity,
@@ -513,7 +575,7 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
           border: const Border(top: BorderSide(color: Color(0xFFE2EBE2))),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, -3),
             ),

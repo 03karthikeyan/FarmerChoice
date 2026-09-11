@@ -34,11 +34,25 @@ class AuthProvider extends ChangeNotifier {
       final cachedUser = await StorageService().getUser();
       final token = await StorageService().getAccessToken();
 
-      if (token != null && cachedUser != null) {
+      if (token != null && token.isNotEmpty && cachedUser != null) {
         _currentUser = UserModel.fromJson(cachedUser);
+
+        // Restore cached farmer profile if role is FARMER
+        if (_currentUser?.role == 'FARMER') {
+          final cachedProfile = await StorageService().getFarmerProfile();
+          if (cachedProfile != null) {
+            _farmerProfile = FarmerProfileModel.fromJson(cachedProfile);
+          }
+        }
+
         _state = AuthState.authenticated;
         SocketService().connect();
         notifyListeners();
+
+        // Silently refresh profile in background if farmer
+        if (_currentUser?.role == 'FARMER') {
+          _refreshFarmerProfileSilently();
+        }
         return;
       }
     } catch (e) {
@@ -47,6 +61,22 @@ class AuthProvider extends ChangeNotifier {
 
     _state = AuthState.unauthenticated;
     notifyListeners();
+  }
+
+  Future<void> _refreshFarmerProfileSilently() async {
+    try {
+      final res = await ApiClient().dio.get('/farmers/profile');
+      if (res.data['success'] == true && res.data['data'] != null) {
+        final profileData = res.data['data']['profile'] ?? res.data['data'];
+        if (profileData is Map<String, dynamic>) {
+          _farmerProfile = FarmerProfileModel.fromJson(profileData);
+          await StorageService().saveFarmerProfile(_farmerProfile!.toJson());
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Silent profile refresh skipped: $e');
+    }
   }
 
   Future<bool> login(String identifier, String password) async {
@@ -66,6 +96,7 @@ class AuthProvider extends ChangeNotifier {
 
         if (data['profile'] != null && _currentUser!.role == 'FARMER') {
           _farmerProfile = FarmerProfileModel.fromJson(data['profile']);
+          await StorageService().saveFarmerProfile(_farmerProfile!.toJson());
         }
 
         await StorageService().saveTokens(
@@ -80,7 +111,7 @@ class AuthProvider extends ChangeNotifier {
         return true;
       }
     } on DioException catch (e) {
-      _errorMessage = e.response?.data['message'] ?? 'Login failed. Please check credentials.';
+      _errorMessage = _parseDioError(e, 'Login failed. Please check credentials.');
     } catch (e) {
       _errorMessage = 'Connection error: $e';
     }
@@ -88,6 +119,21 @@ class AuthProvider extends ChangeNotifier {
     _state = AuthState.unauthenticated;
     notifyListeners();
     return false;
+  }
+
+  String _parseDioError(DioException e, String defaultMsg) {
+    if (e.response?.data is Map && e.response?.data['message'] != null) {
+      return e.response!.data['message'].toString();
+    }
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.receiveTimeout) {
+      return 'Connection timed out. Please check if server is reachable.';
+    }
+    if (e.type == DioExceptionType.connectionError) {
+      return 'Unable to connect to server (${ApiClient.baseUrl}).';
+    }
+    return defaultMsg;
   }
 
   Future<bool> registerCustomer({
@@ -132,7 +178,7 @@ class AuthProvider extends ChangeNotifier {
         return true;
       }
     } on DioException catch (e) {
-      _errorMessage = e.response?.data['message'] ?? 'Registration failed.';
+      _errorMessage = _parseDioError(e, 'Registration failed.');
     } catch (e) {
       _errorMessage = 'Registration error: $e';
     }
@@ -182,6 +228,7 @@ class AuthProvider extends ChangeNotifier {
         _currentUser = UserModel.fromJson(data['user']);
         if (data['profile'] != null) {
           _farmerProfile = FarmerProfileModel.fromJson(data['profile']);
+          await StorageService().saveFarmerProfile(_farmerProfile!.toJson());
         }
         await StorageService().saveTokens(
           accessToken: data['accessToken'],
@@ -195,7 +242,7 @@ class AuthProvider extends ChangeNotifier {
         return true;
       }
     } on DioException catch (e) {
-      _errorMessage = e.response?.data['message'] ?? 'Farmer registration failed.';
+      _errorMessage = _parseDioError(e, 'Farmer registration failed.');
     } catch (e) {
       _errorMessage = 'Registration error: $e';
     }
@@ -289,6 +336,7 @@ class AuthProvider extends ChangeNotifier {
         _currentUser = UserModel.fromJson(data['user']);
         if (data['profile'] != null) {
           _farmerProfile = FarmerProfileModel.fromJson(data['profile']);
+          await StorageService().saveFarmerProfile(_farmerProfile!.toJson());
         }
         await StorageService().saveUser(_currentUser!.toJson());
         _state = AuthState.authenticated;

@@ -6,6 +6,7 @@ const { UserRoles } = require('../constants');
 
 // Customer submits verified review
 router.post('/', authenticate, requireRole(UserRoles.CUSTOMER), reviewController.createReview);
+router.get('/eligible-deal/:farmerId', authenticate, requireRole(UserRoles.CUSTOMER), reviewController.checkReviewEligibility);
 router.get('/farmer/:farmerId', reviewController.getFarmerReviews);
 router.post('/:id/reply', authenticate, requireRole(UserRoles.FARMER), reviewController.replyToReview);
 

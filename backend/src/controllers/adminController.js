@@ -7,6 +7,7 @@ const Review = require('../models/Review');
 const Report = require('../models/Report');
 const SupportTicket = require('../models/SupportTicket');
 const AuditLog = require('../models/AuditLog');
+const notificationService = require('../services/notificationService');
 const {
   UserRoles,
   UserStatus,
@@ -154,6 +155,17 @@ exports.verifyFarmer = async (req, res, next) => {
 
     await logAdminAction(adminId, 'VERIFY_FARMER', 'FarmerProfile', profile._id, { verified: true }, req.ip);
 
+    // Real-time & Push notification to farmer
+    await notificationService.sendNotification({
+      userId: profile.userId,
+      title: 'Profile Verified! 🏅',
+      body: 'Congratulations! Your farmer profile has been verified by the admin team. The Verified badge is now active on all your listings.',
+      type: 'VERIFICATION_STATUS',
+      referenceId: profile._id,
+      referenceType: 'FarmerProfile',
+      data: { status: 'VERIFIED' }
+    });
+
     res.status(200).json({
       success: true,
       message: 'Farmer profile verified successfully.',
@@ -180,6 +192,17 @@ exports.rejectFarmer = async (req, res, next) => {
     await profile.save();
 
     await logAdminAction(adminId, 'REJECT_FARMER', 'FarmerProfile', profile._id, { reason }, req.ip);
+
+    // Real-time & Push notification to farmer
+    await notificationService.sendNotification({
+      userId: profile.userId,
+      title: 'Verification Update',
+      body: reason ? `Your verification could not be completed. Reason: ${reason}` : 'Your farmer verification was declined. Please check your documents.',
+      type: 'VERIFICATION_STATUS',
+      referenceId: profile._id,
+      referenceType: 'FarmerProfile',
+      data: { status: 'REJECTED' }
+    });
 
     res.status(200).json({
       success: true,

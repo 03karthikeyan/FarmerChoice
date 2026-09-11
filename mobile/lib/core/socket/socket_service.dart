@@ -70,6 +70,14 @@ class SocketService {
     _socket?.off('new_message');
   }
 
+  void listenToNotifications(Function(dynamic) onNotification) {
+    _socket?.on('new_notification', onNotification);
+  }
+
+  void stopListeningNotifications() {
+    _socket?.off('new_notification');
+  }
+
   void disconnect() {
     _socket?.disconnect();
     _socket?.dispose();

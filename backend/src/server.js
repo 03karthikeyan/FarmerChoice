@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const app = require('./app');
 const connectDB = require('./config/db');
 const setupChatSocket = require('./sockets/chatSocket');
+const notificationService = require('./services/notificationService');
 
 const PORT = process.env.PORT || 5000;
 
@@ -17,8 +18,9 @@ const io = new Server(server, {
   }
 });
 
-// Attach Socket.IO to Express app
+// Attach Socket.IO to Express app & notification service
 app.set('io', io);
+notificationService.setIoInstance(io);
 
 // Setup Chat Socket Handlers
 setupChatSocket(io);

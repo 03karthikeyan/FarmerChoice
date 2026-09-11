@@ -19,7 +19,7 @@ class VegetableCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final image = vegetable.images.isNotEmpty
         ? vegetable.images[0]
-        : 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400';
+        : '';
 
     return InkWell(
       onTap: onTap,

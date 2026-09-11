@@ -259,8 +259,11 @@ class _VegetableDetailScreenState extends State<VegetableDetailScreen> {
                                         veg.farmer!.name,
                                         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark),
                                       ),
-                                      const SizedBox(width: 6),
-                                      const VerifiedBadge(isSmall: true),
+                                      VerifiedBadge(
+                                        status: veg.farmerProfile?.verificationStatus ??
+                                            (veg.farmer?.isVerified == true ? 'VERIFIED' : 'PENDING'),
+                                        isSmall: true,
+                                      ),
                                     ],
                                   ),
                                   const SizedBox(height: 2),

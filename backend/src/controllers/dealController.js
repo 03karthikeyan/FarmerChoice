@@ -4,6 +4,7 @@ const FarmerProfile = require('../models/FarmerProfile');
 const CustomerProfile = require('../models/CustomerProfile');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const notificationService = require('../services/notificationService');
 const { DealStatus, DeliveryMethod, UserRoles } = require('../constants');
 
 // Helper to generate readable deal number like #FC1024
@@ -86,13 +87,14 @@ exports.createDealRequest = async (req, res, next) => {
     });
 
     // Notify farmer
-    await Notification.create({
+    await notificationService.sendNotification({
       userId: vegetable.farmerId,
       title: 'New Deal Request',
       body: `Customer sent a deal request for ${qty} ${vegetable.priceUnit} of ${vegetable.name} (Ref: ₹${refValue})`,
       type: 'DEAL_REQUEST',
       referenceId: deal._id,
-      referenceType: 'Deal'
+      referenceType: 'Deal',
+      data: { dealId: deal._id.toString() }
     });
 
     // Populate for response
@@ -166,13 +168,14 @@ exports.counterOffer = async (req, res, next) => {
 
     // Notify the other party
     const targetUserId = isFarmer ? deal.customerId : deal.farmerId;
-    await Notification.create({
+    await notificationService.sendNotification({
       userId: targetUserId,
       title: 'Counter Offer Received',
       body: `${isFarmer ? 'Farmer' : 'Customer'} proposed a counter offer: ${newQty} ${deal.priceUnit} @ ₹${newPrice}/${deal.priceUnit} (₹${newRefValue})`,
       type: 'DEAL_COUNTER',
       referenceId: deal._id,
-      referenceType: 'Deal'
+      referenceType: 'Deal',
+      data: { dealId: deal._id.toString() }
     });
 
     const populated = await Deal.findById(deal._id)
@@ -213,13 +216,14 @@ exports.acceptDeal = async (req, res, next) => {
 
     // Notify the other party
     const targetUserId = isFarmer ? deal.customerId : deal.farmerId;
-    await Notification.create({
+    await notificationService.sendNotification({
       userId: targetUserId,
-      title: 'Deal Accepted!',
+      title: 'Deal Accepted! 🎉',
       body: `Deal #${deal.dealNumber} was accepted. You can now coordinate pickup / delivery details directly.`,
       type: 'DEAL_ACCEPTED',
       referenceId: deal._id,
-      referenceType: 'Deal'
+      referenceType: 'Deal',
+      data: { dealId: deal._id.toString() }
     });
 
     const populated = await Deal.findById(deal._id)
@@ -250,13 +254,14 @@ exports.markReady = async (req, res, next) => {
     deal.status = DealStatus.READY;
     await deal.save();
 
-    await Notification.create({
+    await notificationService.sendNotification({
       userId: deal.customerId,
-      title: 'Vegetables Ready!',
+      title: 'Vegetables Ready! 🥬',
       body: `Farmer has packed your fresh vegetables for Deal #${deal.dealNumber}.`,
       type: 'DEAL_READY',
       referenceId: deal._id,
-      referenceType: 'Deal'
+      referenceType: 'Deal',
+      data: { dealId: deal._id.toString() }
     });
 
     res.status(200).json({
@@ -314,13 +319,14 @@ exports.confirmCompletion = async (req, res, next) => {
       );
 
       // Notify customer to leave a verified review
-      await Notification.create({
+      await notificationService.sendNotification({
         userId: deal.customerId,
-        title: 'Deal Completed!',
+        title: 'Deal Completed! ⭐',
         body: `Deal #${deal.dealNumber} is completed. Please share a verified review for the farmer.`,
         type: 'DEAL_COMPLETED',
         referenceId: deal._id,
-        referenceType: 'Deal'
+        referenceType: 'Deal',
+        data: { dealId: deal._id.toString() }
       });
     }
 
@@ -368,6 +374,18 @@ exports.cancelDeal = async (req, res, next) => {
     deal.cancellationReason = reason || 'Mutually cancelled or declined';
 
     await deal.save();
+
+    // Notify other party of cancellation
+    const targetUserId = isFarmer ? deal.customerId : deal.farmerId;
+    await notificationService.sendNotification({
+      userId: targetUserId,
+      title: 'Deal Cancelled',
+      body: `Deal #${deal.dealNumber} was cancelled.`,
+      type: 'DEAL_CANCELLED',
+      referenceId: deal._id,
+      referenceType: 'Deal',
+      data: { dealId: deal._id.toString() }
+    });
 
     res.status(200).json({
       success: true,

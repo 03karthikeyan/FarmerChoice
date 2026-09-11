@@ -8,6 +8,11 @@ class RoleSelectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final size = mediaQuery.size;
+    final bottomInset = mediaQuery.padding.bottom;
+    final isCompact = size.height < 720;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -17,10 +22,17 @@ class RoleSelectionScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: AppColors.textDark),
           onPressed: () => Navigator.pop(context),
         ),
+        title: const Text('Select Your Role', style: TextStyle(color: AppColors.textDark),textAlign: TextAlign.center),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.only(
+            left: 18,
+            right: 18,
+            top: 6,
+            bottom: bottomInset > 0 ? bottomInset + 16 : 28,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -40,32 +52,33 @@ class RoleSelectionScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              const Text(
+              SizedBox(height: isCompact ? 8 : 12),
+              Text(
                 'How would you like to use Farmer Choice?',
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: isCompact ? 21 : 24,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textDark,
                   height: 1.25,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
+              const SizedBox(height: 6),
+              Text(
                 'Select your account type to proceed. You can connect with farmers or sell fresh produce with zero platform fee.',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: isCompact ? 12 : 13,
                   color: AppColors.textMedium,
-                  height: 1.4,
+                  height: 1.35,
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: isCompact ? 18 : 26),
 
               // Customer Role Card
               _RoleCard(
                 icon: Icons.shopping_basket_outlined,
                 title: 'CUSTOMER',
                 tagline: 'Buy fresh vegetables directly from farmers',
+                isCompact: isCompact,
                 benefits: const [
                   'Discover vegetables from multiple farmers',
                   'Compare price, ratings & farm distance',
@@ -79,13 +92,14 @@ class RoleSelectionScreen extends StatelessWidget {
                   );
                 },
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: isCompact ? 14 : 18),
 
               // Farmer Role Card
               _RoleCard(
                 icon: Icons.agriculture,
                 title: 'FARMER',
                 tagline: 'Sell your vegetables directly to customers',
+                isCompact: isCompact,
                 benefits: const [
                   'List your harvested vegetables for free',
                   'Set your own selling price anytime',
@@ -113,6 +127,7 @@ class _RoleCard extends StatelessWidget {
   final String tagline;
   final List<String> benefits;
   final VoidCallback onTap;
+  final bool isCompact;
 
   const _RoleCard({
     required this.icon,
@@ -120,23 +135,24 @@ class _RoleCard extends StatelessWidget {
     required this.tagline,
     required this.benefits,
     required this.onTap,
+    this.isCompact = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(isCompact ? 16 : 18),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppColors.borderLight, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 15,
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 14,
               offset: const Offset(0, 4),
             ),
           ],
@@ -147,30 +163,35 @@ class _RoleCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(isCompact ? 10 : 12),
                   decoration: BoxDecoration(
                     color: AppColors.lightGreenBg,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(icon, color: AppColors.primaryGreen, size: 28),
+                  child: Icon(
+                    icon,
+                    color: AppColors.primaryGreen,
+                    size: isCompact ? 24 : 26,
+                  ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: isCompact ? 16 : 17,
                           fontWeight: FontWeight.w800,
                           color: AppColors.primaryGreen,
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
                         tagline,
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: isCompact ? 11.5 : 12,
                           fontWeight: FontWeight.w500,
                           color: AppColors.textMedium,
                         ),
@@ -178,26 +199,30 @@ class _RoleCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textLight),
+                const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textLight),
               ],
             ),
-            const SizedBox(height: 14),
-            const Divider(color: AppColors.borderLight),
+            const SizedBox(height: 12),
+            const Divider(color: AppColors.borderLight, height: 1),
             const SizedBox(height: 10),
             Column(
               children: benefits
                   .map(
                     (b) => Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.only(bottom: 5),
                       child: Row(
                         children: [
-                          const Icon(Icons.check_circle_outline, size: 14, color: AppColors.primaryLight),
+                          const Icon(
+                            Icons.check_circle_outline,
+                            size: 14,
+                            color: AppColors.primaryLight,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               b,
-                              style: const TextStyle(
-                                fontSize: 11.5,
+                              style: TextStyle(
+                                fontSize: isCompact ? 11 : 11.5,
                                 color: AppColors.textDark,
                                 fontWeight: FontWeight.w500,
                               ),

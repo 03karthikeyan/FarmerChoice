@@ -166,7 +166,10 @@ class FarmerProfileScreen extends StatelessWidget {
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textDark),
                         ),
                         const SizedBox(height: 2),
-                        const VerifiedBadge(isSmall: true),
+                        VerifiedBadge(
+                          status: farm?.verificationStatus ?? 'PENDING',
+                          isSmall: true,
+                        ),
                         const SizedBox(height: 4),
                         Text(
                           farm?.farmName.isNotEmpty == true ? farm!.farmName : 'Registered Organic Farm',

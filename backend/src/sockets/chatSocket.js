@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
 const User = require('../models/User');
+const notificationService = require('../services/notificationService');
 
 const setupChatSocket = (io) => {
   // Authentication middleware for socket connections
@@ -120,6 +121,20 @@ const setupChatSocket = (io) => {
           conversationId,
           message: populatedMessage
         });
+
+        // Send background/foreground push notification via Firebase FCM
+        const senderName = socket.user.name || 'FarmerChoice';
+        notificationService.sendPushNotification({
+          userId: receiverId,
+          title: `💬 New message from ${senderName}`,
+          body: text || (imageUrl ? '📷 Sent a photo' : 'Sent an attachment'),
+          data: {
+            type: 'CHAT_MESSAGE',
+            conversationId: String(conversationId),
+            senderId: String(userId),
+            messageId: String(message._id)
+          }
+        }).catch(err => console.log('Chat push err:', err.message));
 
         if (callback) callback({ success: true, data: populatedMessage });
       } catch (err) {

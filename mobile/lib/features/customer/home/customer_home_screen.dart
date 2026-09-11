@@ -5,10 +5,12 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/vegetable_provider.dart';
 import '../../../core/providers/chat_provider.dart';
+import '../../../core/providers/notification_provider.dart';
 import '../../../core/widgets/vegetable_card.dart';
 import '../../../core/widgets/deal_safety_banner.dart';
 import '../vegetables/vegetable_detail_screen.dart';
 import '../chat/chat_screen.dart';
+import '../../notifications/notification_screen.dart';
 
 class CustomerHomeScreen extends StatelessWidget {
   const CustomerHomeScreen({super.key});
@@ -24,14 +26,19 @@ class CustomerHomeScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () => vegProvider.fetchVegetables(),
+          onRefresh: () async {
+            await Future.wait([
+              vegProvider.fetchVegetables(),
+              context.read<NotificationProvider>().fetchUnreadCount(),
+            ]);
+          },
           color: AppColors.primaryGreen,
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top App Bar / Header
+                // Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -43,26 +50,22 @@ class CustomerHomeScreen extends StatelessWidget {
                             color: AppColors.lightGreenBg,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.eco, color: AppColors.primaryGreen, size: 24),
+                          child: Image.asset('assets/icons/app_icon.png', width: 26, height: 26),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 12),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'FARMER CHOICE',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.primaryGreen,
-                                letterSpacing: 0.5,
+                            Text(
+                              'Farmer Choice',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: AppColors.primaryDark,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                             Text(
-                              'From Farmer to Your Home',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
+                              'Direct from Farmers 🌱',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: AppColors.textMedium,
                               ),
                             ),
@@ -72,14 +75,54 @@ class CustomerHomeScreen extends StatelessWidget {
                     ),
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.borderLight),
-                          ),
-                          child: const Icon(Icons.notifications_none, color: AppColors.textDark, size: 20),
+                        Consumer<NotificationProvider>(
+                          builder: (context, notifProv, _) {
+                            return InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: AppColors.borderLight),
+                                    ),
+                                    child: const Icon(Icons.notifications_none, color: AppColors.textDark, size: 20),
+                                  ),
+                                  if (notifProv.unreadCount > 0)
+                                    Positioned(
+                                      top: -4,
+                                      right: -4,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.accentRed,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                        child: Text(
+                                          '${notifProv.unreadCount}',
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(width: 10),
                         CircleAvatar(
@@ -111,7 +154,7 @@ class CustomerHomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(22),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primaryGreen.withOpacity(0.25),
+                        color: AppColors.primaryGreen.withValues(alpha: 0.25),
                         blurRadius: 15,
                         offset: const Offset(0, 6),
                       ),
@@ -148,7 +191,7 @@ class CustomerHomeScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.agriculture, color: Colors.white, size: 32),
@@ -166,7 +209,7 @@ class CustomerHomeScreen extends StatelessWidget {
                     border: Border.all(color: AppColors.borderLight),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
+                        color: Colors.black.withValues(alpha: 0.02),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
@@ -408,7 +451,7 @@ class _FeaturedCard extends StatelessWidget {
           border: Border.all(color: AppColors.borderLight),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),

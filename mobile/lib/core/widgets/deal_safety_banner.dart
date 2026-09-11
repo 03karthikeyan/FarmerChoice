@@ -6,18 +6,18 @@ class DealSafetyBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFE082)),
+        color: const Color(0xFFFFF9E6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFFE082), width: 1.2),
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            Icons.shield_outlined,
-            color: Color(0xFFF57F17),
+            Icons.handshake_outlined,
+            color: Color(0xFFE65100),
             size: 20,
           ),
           SizedBox(width: 10),
@@ -26,20 +26,22 @@ class DealSafetyBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Direct Payment Guarantee',
+                  'Trust & Verify — Direct Farmer Connection',
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFE65100),
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFFBF360C),
+                    letterSpacing: 0.1,
                   ),
                 ),
-                SizedBox(height: 2),
+                SizedBox(height: 3),
                 Text(
-                  'Payment is made directly between customer and farmer. Farmer Choice does not process payments or collect commission.',
+                  'Farmer Choice connects you directly with farmers. We do not process or guarantee payments. We recommend direct farm visits or paying in person after confirming quality and delivery.',
                   style: TextStyle(
                     fontSize: 11,
                     color: Color(0xFF5D4037),
-                    height: 1.3,
+                    height: 1.35,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],

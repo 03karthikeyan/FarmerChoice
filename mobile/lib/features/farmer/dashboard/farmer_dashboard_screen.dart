@@ -3,11 +3,13 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/providers/farmer_provider.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/notification_provider.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../products/add_product_screen.dart';
 import '../products/farmer_products_screen.dart';
 import '../deals/farmer_deals_screen.dart';
 import '../../customer/chat/chat_list_screen.dart';
+import '../../notifications/notification_screen.dart';
 
 class FarmerDashboardScreen extends StatefulWidget {
   const FarmerDashboardScreen({super.key});
@@ -22,6 +24,7 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<FarmerProvider>(context, listen: false).fetchDashboardStats();
+      Provider.of<NotificationProvider>(context, listen: false).fetchUnreadCount();
     });
   }
 
@@ -70,7 +73,10 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textDark),
                                 ),
                                 const SizedBox(width: 6),
-                                const VerifiedBadge(isSmall: true),
+                                VerifiedBadge(
+                                  status: authProvider.farmerProfile?.verificationStatus ?? 'PENDING',
+                                  isSmall: true,
+                                ),
                               ],
                             ),
                             Row(
@@ -84,14 +90,54 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                         ),
                       ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.borderLight),
-                      ),
-                      child: const Icon(Icons.notifications_none, color: AppColors.textDark, size: 20),
+                    Consumer<NotificationProvider>(
+                      builder: (context, notifProv, _) {
+                        return InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.borderLight),
+                                ),
+                                child: const Icon(Icons.notifications_none, color: AppColors.textDark, size: 20),
+                              ),
+                              if (notifProv.unreadCount > 0)
+                                Positioned(
+                                  top: -4,
+                                  right: -4,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.accentRed,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                    child: Text(
+                                      '${notifProv.unreadCount}',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

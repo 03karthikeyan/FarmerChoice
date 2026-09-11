@@ -23,29 +23,38 @@ class StorageService {
     try {
       await _secureStorage.write(key: 'access_token', value: accessToken);
       await _secureStorage.write(key: 'refresh_token', value: refreshToken);
-    } catch (_) {
+    } catch (_) {}
+    try {
       _prefs ??= await SharedPreferences.getInstance();
       await _prefs?.setString('access_token', accessToken);
       await _prefs?.setString('refresh_token', refreshToken);
-    }
+    } catch (_) {}
   }
 
   Future<String?> getAccessToken() async {
     try {
       final token = await _secureStorage.read(key: 'access_token');
-      if (token != null) return token;
+      if (token != null && token.isNotEmpty) return token;
     } catch (_) {}
-    _prefs ??= await SharedPreferences.getInstance();
-    return _prefs?.getString('access_token');
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+      return _prefs?.getString('access_token');
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<String?> getRefreshToken() async {
     try {
       final token = await _secureStorage.read(key: 'refresh_token');
-      if (token != null) return token;
+      if (token != null && token.isNotEmpty) return token;
     } catch (_) {}
-    _prefs ??= await SharedPreferences.getInstance();
-    return _prefs?.getString('refresh_token');
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+      return _prefs?.getString('refresh_token');
+    } catch (_) {
+      return null;
+    }
   }
 
   // Cached User & Role
@@ -63,7 +72,26 @@ class StorageService {
     try {
       _prefs ??= await SharedPreferences.getInstance();
       final data = _prefs?.getString('cached_user');
-      if (data != null) {
+      if (data != null && data.isNotEmpty) {
+        return jsonDecode(data);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // Cached Farmer Profile
+  Future<void> saveFarmerProfile(Map<String, dynamic> profileJson) async {
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+      await _prefs!.setString('cached_farmer_profile', jsonEncode(profileJson));
+    } catch (_) {}
+  }
+
+  Future<Map<String, dynamic>?> getFarmerProfile() async {
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+      final data = _prefs?.getString('cached_farmer_profile');
+      if (data != null && data.isNotEmpty) {
         return jsonDecode(data);
       }
     } catch (_) {}
@@ -85,6 +113,7 @@ class StorageService {
     try {
       _prefs ??= await SharedPreferences.getInstance();
       await _prefs?.remove('cached_user');
+      await _prefs?.remove('cached_farmer_profile');
       await _prefs?.remove('user_role');
       await _prefs?.remove('access_token');
       await _prefs?.remove('refresh_token');
