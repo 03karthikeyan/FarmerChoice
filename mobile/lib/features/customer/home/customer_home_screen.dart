@@ -50,7 +50,7 @@ class CustomerHomeScreen extends StatelessWidget {
                             color: AppColors.lightGreenBg,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Image.asset('assets/icons/app_icon.png', width: 26, height: 26),
+                          child: Image.asset('assets/images/app_icon.png', width: 26, height: 26),
                         ),
                         const SizedBox(width: 12),
                         Column(
