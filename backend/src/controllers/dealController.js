@@ -5,7 +5,7 @@ const CustomerProfile = require('../models/CustomerProfile');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const notificationService = require('../services/notificationService');
-const { DealStatus, DeliveryMethod, UserRoles } = require('../constants');
+const { DealStatus, DeliveryMethod, UserRoles, AvailabilityStatus } = require('../constants');
 
 // Helper to generate readable deal number like #FC1024
 const generateDealNumber = async () => {
@@ -51,9 +51,25 @@ exports.createDealRequest = async (req, res, next) => {
       });
     }
 
-    const dealNumber = await generateDealNumber();
     const qty = Number(requestedQuantity);
     const price = Number(requestedPrice);
+
+    // Validate available stock
+    if (vegetable.availabilityStatus === AvailabilityStatus.OUT_OF_STOCK || vegetable.availableQuantity <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'This product is currently out of stock.'
+      });
+    }
+
+    if (qty > vegetable.availableQuantity) {
+      return res.status(400).json({
+        success: false,
+        message: `Requested quantity (${qty} ${vegetable.priceUnit}) exceeds available stock (${vegetable.availableQuantity} ${vegetable.priceUnit}).`
+      });
+    }
+
+    const dealNumber = await generateDealNumber();
     const refValue = Math.round(qty * price * 100) / 100;
 
     const deal = await Deal.create({
@@ -317,6 +333,22 @@ exports.confirmCompletion = async (req, res, next) => {
         { userId: deal.customerId },
         { $inc: { totalDealsCompleted: 1 } }
       );
+
+      // Auto-calculate & deduct remaining vegetable quantity
+      if (deal.vegetableId && deal.agreedQuantity) {
+        const vegetable = await Vegetable.findById(deal.vegetableId);
+        if (vegetable) {
+          const newQty = Math.max(0, (vegetable.availableQuantity || 0) - Number(deal.agreedQuantity));
+          vegetable.availableQuantity = newQty;
+
+          if (newQty === 0) {
+            vegetable.availabilityStatus = AvailabilityStatus.OUT_OF_STOCK;
+          } else if (newQty <= (vegetable.minOrderQuantity || 1) * 2) {
+            vegetable.availabilityStatus = AvailabilityStatus.LIMITED_STOCK;
+          }
+          await vegetable.save();
+        }
+      }
 
       // Notify customer to leave a verified review
       await notificationService.sendNotification({
