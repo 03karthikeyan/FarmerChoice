@@ -14,6 +14,10 @@ class VegetableModel {
   final String availabilityStatus; // AVAILABLE_NOW, LIMITED_STOCK, OUT_OF_STOCK
   final bool isOrganic;
   final String featuredStatus;
+  final double minOrderQuantity;
+  final int viewCount;
+  final int inquiryCount;
+  final DateTime? harvestDate;
   final UserModel? farmer;
   final FarmerProfileModel? farmerProfile;
 
@@ -27,9 +31,13 @@ class VegetableModel {
     required this.price,
     this.priceUnit = 'kg',
     required this.availableQuantity,
+    this.minOrderQuantity = 1.0,
     this.availabilityStatus = 'AVAILABLE_NOW',
     this.isOrganic = true,
     this.featuredStatus = 'NONE',
+    this.viewCount = 0,
+    this.inquiryCount = 0,
+    this.harvestDate,
     this.farmer,
     this.farmerProfile,
   });
@@ -45,6 +53,13 @@ class VegetableModel {
       profileObj = FarmerProfileModel.fromJson(json['farmerProfileId']);
     }
 
+    DateTime? parsedHarvestDate;
+    if (json['harvestDate'] != null) {
+      try {
+        parsedHarvestDate = DateTime.parse(json['harvestDate']);
+      } catch (_) {}
+    }
+
     return VegetableModel(
       id: json['_id'] ?? json['id'] ?? '',
       name: json['name'] ?? '',
@@ -57,9 +72,15 @@ class VegetableModel {
       availableQuantity: (json['availableQuantity'] != null)
           ? (json['availableQuantity'] as num).toDouble()
           : 0.0,
+      minOrderQuantity: (json['minOrderQuantity'] != null)
+          ? (json['minOrderQuantity'] as num).toDouble()
+          : 1.0,
       availabilityStatus: json['availabilityStatus'] ?? 'AVAILABLE_NOW',
       isOrganic: json['isOrganic'] ?? true,
       featuredStatus: json['featuredStatus'] ?? 'NONE',
+      viewCount: json['viewCount'] ?? 0,
+      inquiryCount: json['inquiryCount'] ?? 0,
+      harvestDate: parsedHarvestDate,
       farmer: farmerObj,
       farmerProfile: profileObj,
     );
