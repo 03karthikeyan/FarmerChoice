@@ -427,7 +427,7 @@ class _VegetableDetailScreenState extends State<VegetableDetailScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: AppColors.borderLight),
-                      ],
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -462,7 +462,7 @@ class _VegetableDetailScreenState extends State<VegetableDetailScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: AppColors.borderLight),
-                      ],
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
