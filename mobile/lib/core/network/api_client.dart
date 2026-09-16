@@ -10,7 +10,7 @@ class ApiClient {
 
   // Switch to true when deploying/using the live cloud backend on Render.
   // Set to false for local testing with backend running on your PC.
-  static const bool isProduction = false;
+  static const bool isProduction = true;
 
   // Live Cloud Server on Render
   static const String liveServerHost = 'farmerchoice.onrender.com';

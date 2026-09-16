@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../core/providers/auth_provider.dart';
 import '../auth/login_screen.dart';
 import '../customer/customer_main_screen.dart';
@@ -154,7 +153,7 @@ class _SplashScreenState extends State<SplashScreen>
             child: ScaleTransition(
               scale: _scaleAnimation,
               child: Image.asset(
-                'assets/images/splash_screen_art.jpg',
+                'assets/images/splash_screen_art.png',
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: double.infinity,
