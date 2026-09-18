@@ -19,7 +19,7 @@ class _FarmerRegisterScreenState extends State<FarmerRegisterScreen> {
   final _farmNameController = TextEditingController();
   final _villageController = TextEditingController();
   final _talukController = TextEditingController();
-  final _districtController = TextEditingController(text: 'Thanjavur');
+  final _districtController = TextEditingController();
   final _stateController = TextEditingController(text: 'Tamil Nadu');
   final _farmAddressController = TextEditingController();
   final _aboutMeController = TextEditingController(text: 'Experienced farmer growing high quality natural vegetables directly from our farm.');

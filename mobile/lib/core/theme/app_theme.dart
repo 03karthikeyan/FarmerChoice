@@ -2,6 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
 
+// Custom Smooth Fade Page Transition for entire app
+class FadePageTransitionsBuilder extends PageTransitionsBuilder {
+  const FadePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curvedAnimation = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeInOutCubic,
+    );
+
+    return FadeTransition(
+      opacity: curvedAnimation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.04, 0.0),
+          end: Offset.zero,
+        ).animate(curvedAnimation),
+        child: child,
+      ),
+    );
+  }
+}
+
 class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
@@ -13,6 +43,15 @@ class AppTheme {
         primary: AppColors.primaryGreen,
         secondary: AppColors.primaryLight,
         surface: AppColors.cardBg,
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadePageTransitionsBuilder(),
+          TargetPlatform.iOS: FadePageTransitionsBuilder(),
+          TargetPlatform.windows: FadePageTransitionsBuilder(),
+          TargetPlatform.linux: FadePageTransitionsBuilder(),
+          TargetPlatform.macOS: FadePageTransitionsBuilder(),
+        },
       ),
       textTheme: GoogleFonts.plusJakartaSansTextTheme().copyWith(
         displayLarge: GoogleFonts.plusJakartaSans(

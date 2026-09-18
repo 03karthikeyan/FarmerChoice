@@ -1,24 +1,254 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/models/farmer_profile_model.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/vegetable_provider.dart';
-import '../../../core/providers/chat_provider.dart';
 import '../../../core/providers/notification_provider.dart';
 import '../../../core/widgets/vegetable_card.dart';
-import '../../../core/widgets/deal_safety_banner.dart';
+import '../../../core/widgets/promo_slider_banner.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../vegetables/vegetable_detail_screen.dart';
-import '../chat/chat_screen.dart';
+import '../farmers/farmer_profile_screen.dart';
 import '../../notifications/notification_screen.dart';
 
-class CustomerHomeScreen extends StatelessWidget {
+class CustomerHomeScreen extends StatefulWidget {
   const CustomerHomeScreen({super.key});
+
+  @override
+  State<CustomerHomeScreen> createState() => _CustomerHomeScreenState();
+}
+
+class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
+  final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+
+  final List<String> _districts = [
+    'All',
+    'Thanjavur',
+    'Madurai',
+    'Coimbatore',
+    'Salem',
+    'Tiruchirappalli',
+    'Tirunelveli',
+    'Erode',
+    'Dindigul',
+    'Chennai',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+
+    // Initial fetch
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final vegProvider = Provider.of<VegetableProvider>(context, listen: false);
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final district = auth.currentUser?.district;
+      if (district != null && district.isNotEmpty) {
+        vegProvider.fetchNearbyFarmers(district: district);
+      } else {
+        vegProvider.fetchNearbyFarmers();
+      }
+    });
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      final vegProvider = Provider.of<VegetableProvider>(context, listen: false);
+      if (vegProvider.hasMore && !vegProvider.isLoadingMore) {
+        vegProvider.loadMoreVegetables();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _showFilterModal(BuildContext context, VegetableProvider vegProvider) {
+    String tempCategory = vegProvider.selectedCategory;
+    String tempDistrict = vegProvider.selectedDistrict;
+    String tempSortBy = vegProvider.sortBy;
+    double tempMaxPrice = vegProvider.maxPrice ?? 200;
+    bool tempOnlyOrganic = vegProvider.onlyOrganic;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 16,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.tune_rounded, color: Color(0xFF176B2C), size: 22),
+                          SizedBox(width: 8),
+                          Text(
+                            'Filter & Sort Vegetables',
+                            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textDark),
+                          ),
+                        ],
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          vegProvider.resetFilters();
+                          Navigator.pop(ctx);
+                        },
+                        child: const Text('Reset All', style: TextStyle(color: AppColors.accentRed, fontWeight: FontWeight.bold, fontSize: 13)),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20),
+
+                  // Sort By
+                  const Text('Sort By', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _choiceChip('Newest First', tempSortBy == 'newest', () => setModalState(() => tempSortBy = 'newest')),
+                      _choiceChip('Lowest Price 🏷️', tempSortBy == 'lowest_price', () => setModalState(() => tempSortBy = 'lowest_price')),
+                      _choiceChip('Highest Price', tempSortBy == 'highest_price', () => setModalState(() => tempSortBy = 'highest_price')),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  // District / Location
+                  const Text('District / Location', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F8E9),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFC8E6C9)),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: tempDistrict,
+                        isExpanded: true,
+                        icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF176B2C)),
+                        items: _districts.map((d) => DropdownMenuItem(value: d, child: Text(d, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)))).toList(),
+                        onChanged: (val) {
+                          if (val != null) setModalState(() => tempDistrict = val);
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Max Price Slider
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Maximum Price / Unit', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                      Text('Up to ₹${tempMaxPrice.toInt()}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF176B2C))),
+                    ],
+                  ),
+                  Slider(
+                    value: tempMaxPrice,
+                    min: 20,
+                    max: 300,
+                    divisions: 28,
+                    activeColor: const Color(0xFF176B2C),
+                    inactiveColor: const Color(0xFFC8E6C9),
+                    onChanged: (val) => setModalState(() => tempMaxPrice = val),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // 100% Organic Switch
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('100% Organic Certified Only 🌱', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                    subtitle: const Text('Only show chemical-free naturally grown harvest', style: TextStyle(fontSize: 11, color: AppColors.textMedium)),
+                    value: tempOnlyOrganic,
+                    activeColor: const Color(0xFF176B2C),
+                    onChanged: (val) => setModalState(() => tempOnlyOrganic = val),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Apply Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        vegProvider.applyAdvancedFilters(
+                          category: tempCategory,
+                          district: tempDistrict,
+                          maxPrice: tempMaxPrice,
+                          onlyOrganic: tempOnlyOrganic,
+                          sortBy: tempSortBy,
+                        );
+                        Navigator.pop(ctx);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF176B2C),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: const Text('Apply Filters', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _choiceChip(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF176B2C) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? const Color(0xFF176B2C) : const Color(0xFFCCDACC)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: isSelected ? Colors.white : AppColors.textDark,
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final vegProvider = Provider.of<VegetableProvider>(context);
+    final user = authProvider.currentUser;
 
     final categories = ['All', 'Leafy', 'Root', 'Vegetable', 'Other'];
 
@@ -28,17 +258,20 @@ class CustomerHomeScreen extends StatelessWidget {
         child: RefreshIndicator(
           onRefresh: () async {
             await Future.wait([
-              vegProvider.fetchVegetables(),
+              vegProvider.fetchVegetables(refresh: true),
+              vegProvider.fetchNearbyFarmers(district: user?.district),
               context.read<NotificationProvider>().fetchUnreadCount(),
             ]);
           },
-          color: AppColors.primaryGreen,
+          color: const Color(0xFF176B2C),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
+                // Top Header Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -47,27 +280,36 @@ class CustomerHomeScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppColors.lightGreenBg,
+                            color: const Color(0xFFE8F5E9),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Image.asset('assets/images/app_icon.png', width: 26, height: 26),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Farmer Choice',
                               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                color: AppColors.primaryDark,
-                                fontWeight: FontWeight.w800,
-                              ),
+                                    color: const Color(0xFF1B381E),
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 18,
+                                  ),
                             ),
-                            Text(
-                              'Direct from Farmers 🌱',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.textMedium,
-                              ),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on, size: 12, color: Color(0xFF176B2C)),
+                                const SizedBox(width: 2),
+                                Text(
+                                  user?.district.isNotEmpty == true ? '${user?.villageOrTown ?? ''}, ${user?.district}' : 'Tamil Nadu Farms 🌱',
+                                  style: const TextStyle(
+                                    color: Color(0xFF176B2C),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -95,19 +337,19 @@ class CustomerHomeScreen extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(color: AppColors.borderLight),
                                     ),
-                                    child: const Icon(Icons.notifications_none, color: AppColors.textDark, size: 20),
+                                    child: const Icon(Icons.notifications_none_rounded, color: AppColors.textDark, size: 20),
                                   ),
                                   if (notifProv.unreadCount > 0)
                                     Positioned(
-                                      top: -4,
-                                      right: -4,
+                                      top: -3,
+                                      right: -3,
                                       child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
+                                        padding: const EdgeInsets.all(3),
+                                        decoration: const BoxDecoration(
                                           color: AppColors.accentRed,
                                           shape: BoxShape.circle,
                                         ),
-                                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                        constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
                                         child: Text(
                                           '${notifProv.unreadCount}',
                                           textAlign: TextAlign.center,
@@ -126,126 +368,104 @@ class CustomerHomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 10),
                         CircleAvatar(
-                          radius: 18,
-                          backgroundColor: AppColors.primaryLight,
-                          child: Text(
-                            authProvider.currentUser?.name.isNotEmpty == true
-                                ? authProvider.currentUser!.name.substring(0, 1).toUpperCase()
-                                : 'C',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
+                          radius: 17,
+                          backgroundColor: const Color(0xFF176B2C),
+                          backgroundImage: (user?.profileImage != null && user!.profileImage.isNotEmpty)
+                              ? NetworkImage(user.profileImage)
+                              : null,
+                          child: (user?.profileImage == null || user!.profileImage.isEmpty)
+                              ? Text(
+                                  user?.name.isNotEmpty == true ? user!.name.substring(0, 1).toUpperCase() : 'C',
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                )
+                              : null,
                         ),
                       ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
 
-                // Hero Banner
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primaryDark, AppColors.primaryGreen],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(22),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primaryGreen.withValues(alpha: 0.25),
-                        blurRadius: 15,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'Fresh Vegetables Directly from Farmers',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                height: 1.25,
-                              ),
-                            ),
-                            SizedBox(height: 6),
-                            Text(
-                              'Zero Middlemen • Fair Price • 100% Free',
-                              style: TextStyle(
-                                color: Color(0xFFC8E6C9),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
+                // Interactive Promotional Slider Banner (Deal Safety & Fresh Produce Guarantee)
+                const PromoSliderBanner(),
+                const SizedBox(height: 16),
+
+                // Search Bar + Filter Button
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.borderLight),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (val) => vegProvider.setSearchQuery(val),
+                          decoration: InputDecoration(
+                            hintText: 'Search vegetables (Tomato, Onion, Palak)...',
+                            hintStyle: const TextStyle(fontSize: 12.5, color: AppColors.textLight),
+                            prefixIcon: const Icon(Icons.search, color: Color(0xFF176B2C), size: 20),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      vegProvider.setSearchQuery('');
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                          ),
                         ),
-                        child: const Icon(Icons.agriculture, color: Colors.white, size: 32),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 18),
-
-                // Search Bar
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.borderLight),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    onChanged: (val) => vegProvider.setSearchQuery(val),
-                    decoration: const InputDecoration(
-                      hintText: 'Search fresh vegetables (Tomato, Palak, Onion)...',
-                      hintStyle: TextStyle(fontSize: 13, color: AppColors.textLight),
-                      prefixIcon: Icon(Icons.search, color: AppColors.primaryGreen),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: () => _showFilterModal(context, vegProvider),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: (vegProvider.onlyOrganic || vegProvider.selectedDistrict != 'All' || vegProvider.maxPrice != null)
+                              ? const Color(0xFF176B2C)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFCCDACC)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.tune_rounded,
+                          color: (vegProvider.onlyOrganic || vegProvider.selectedDistrict != 'All' || vegProvider.maxPrice != null)
+                              ? Colors.white
+                              : const Color(0xFF176B2C),
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 18),
 
-                // Zero Payment Notice
-                const DealSafetyBanner(),
-                const SizedBox(height: 20),
-
-                // Categories
-                const Text(
-                  'Categories',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textDark,
-                  ),
-                ),
-                const SizedBox(height: 10),
+                // Category Chips
                 SizedBox(
-                  height: 38,
+                  height: 36,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: categories.length,
@@ -256,12 +476,12 @@ class CustomerHomeScreen extends StatelessWidget {
                         onTap: () => vegProvider.setCategory(cat),
                         child: Container(
                           margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primaryGreen : Colors.white,
+                            color: isSelected ? const Color(0xFF176B2C) : Colors.white,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: isSelected ? AppColors.primaryGreen : AppColors.borderLight,
+                              color: isSelected ? const Color(0xFF176B2C) : const Color(0xFFCCDACC),
                             ),
                           ),
                           child: Center(
@@ -279,100 +499,143 @@ class CustomerHomeScreen extends StatelessWidget {
                     },
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
-                // Featured Vegetables Carousel (if any)
-                if (vegProvider.featuredVegetables.isNotEmpty) ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
-                        'Featured Products',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textDark,
+                // Dynamic Nearby Verified Farmers Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.agriculture_rounded, color: Color(0xFF176B2C), size: 20),
+                        SizedBox(width: 6),
+                        Text(
+                          'Nearby Verified Farmers',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textDark),
                         ),
+                      ],
+                    ),
+                    Text(
+                      user?.district.isNotEmpty == true ? user!.district : 'Tamil Nadu',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF176B2C)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Nearby Farmers Horizontal List / Shimmer
+                if (vegProvider.isLoadingFarmers)
+                  Shimmer(
+                    child: SizedBox(
+                      height: 150,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: 4,
+                        itemBuilder: (context, index) => const FarmerCardSkeleton(),
                       ),
-                      Text(
-                        'Verified Farms',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryGreen,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                    ),
+                  )
+                else if (vegProvider.nearbyFarmers.isNotEmpty)
                   SizedBox(
-                    height: 165,
+                    height: 150,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      itemCount: vegProvider.featuredVegetables.length,
+                      itemCount: vegProvider.nearbyFarmers.length,
                       itemBuilder: (context, index) {
-                        final veg = vegProvider.featuredVegetables[index];
-                        return _FeaturedCard(
-                          vegetable: veg,
+                        final farmer = vegProvider.nearbyFarmers[index];
+                        return _NearbyFarmerCard(
+                          farmer: farmer,
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => VegetableDetailScreen(vegetableId: veg.id),
+                                builder: (_) => FarmerProfileScreen(
+                                  farmerId: farmer.userId.isNotEmpty ? farmer.userId : farmer.id,
+                                  initialProfile: farmer,
+                                ),
                               ),
                             );
                           },
                         );
                       },
                     ),
+                  )
+                else
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.borderLight),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.nature_people_outlined, color: Color(0xFF176B2C), size: 20),
+                        SizedBox(width: 8),
+                        Text('Farmers from all districts active on platform', style: TextStyle(fontSize: 12, color: AppColors.textMedium)),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 24),
-                ],
 
-                // Fresh Vegetables Header
+                const SizedBox(height: 24),
+
+                // Fresh Products Feed Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'Fresh Vegetables',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textDark,
-                      ),
+                      'Fresh Harvest & Products',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textDark),
                     ),
                     Text(
                       '${vegProvider.filteredVegetables.length} Available',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryGreen,
-                      ),
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF176B2C)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
 
-                // Vegetables List
-                if (vegProvider.isLoading)
-                  const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()))
+                // Products List / Shimmer Loading
+                if (vegProvider.isLoading && vegProvider.allVegetables.isEmpty)
+                  Shimmer(
+                    child: Column(
+                      children: List.generate(4, (_) => const VegetableCardSkeleton()),
+                    ),
+                  )
                 else if (vegProvider.filteredVegetables.isEmpty)
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(28),
+                    padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: AppColors.borderLight),
                     ),
                     child: Column(
-                      children: const [
-                        Icon(Icons.eco_outlined, size: 40, color: AppColors.textLight),
-                        SizedBox(height: 10),
-                        Text(
-                          'No vegetables available matching your filter.',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.eco_outlined, size: 52, color: Color(0xFFC8E6C9)),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'No vegetables found matching your filters.',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textDark),
                           textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Try clearing search query or resetting filters.',
+                          style: TextStyle(fontSize: 12, color: AppColors.textMedium),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 14),
+                        ElevatedButton(
+                          onPressed: () => vegProvider.resetFilters(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF176B2C),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: const Text('Reset All Filters', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
@@ -390,34 +653,42 @@ class CustomerHomeScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => VegetableDetailScreen(vegetableId: veg.id),
+                              builder: (_) => VegetableDetailScreen(
+                                vegetableId: veg.id,
+                                initialVegetable: veg,
+                              ),
                             ),
                           );
                         },
-                        onChat: () async {
-                          if (veg.farmer != null && authProvider.currentUser != null) {
-                            final chatProv = Provider.of<ChatProvider>(context, listen: false);
-                            final convId = await chatProv.openConversation(
-                              farmerId: veg.farmer!.id,
-                              customerId: authProvider.currentUser!.id,
-                              vegetableId: veg.id,
-                            );
-                            if (convId != null && context.mounted) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ChatScreen(
-                                    conversationId: convId,
-                                    recipientName: veg.farmer!.name,
-                                    vegetableName: veg.name,
-                                  ),
-                                ),
-                              );
-                            }
-                          }
+                        onChat: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => VegetableDetailScreen(
+                                vegetableId: veg.id,
+                                initialVegetable: veg,
+                              ),
+                            ),
+                          );
                         },
                       );
                     },
+                  ),
+
+                // Infinite Scroll Pagination Loader
+                if (vegProvider.isLoadingMore)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF176B2C))),
+                          SizedBox(width: 8),
+                          Text('Loading more fresh produce...', style: TextStyle(fontSize: 12, color: AppColors.textMedium)),
+                        ],
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -428,64 +699,94 @@ class CustomerHomeScreen extends StatelessWidget {
   }
 }
 
-class _FeaturedCard extends StatelessWidget {
-  final dynamic vegetable;
+// Nearby Farmer Card Component
+class _NearbyFarmerCard extends StatelessWidget {
+  final FarmerProfileModel farmer;
   final VoidCallback onTap;
 
-  const _FeaturedCard({required this.vegetable, required this.onTap});
+  const _NearbyFarmerCard({required this.farmer, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final image = vegetable.images.isNotEmpty
-        ? vegetable.images[0]
-        : 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400';
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 140,
         margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.borderLight),
+          border: Border.all(color: const Color(0xFFE8F5E9)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
+              color: Colors.black.withOpacity(0.02),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: CachedNetworkImage(
-                imageUrl: image,
-                height: 85,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                placeholder: (c, u) => Container(color: AppColors.lightGreenBg),
-                errorWidget: (c, u, e) => Container(color: AppColors.lightGreenBg, child: const Icon(Icons.eco)),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    vegetable.name,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textDark),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: const Color(0xFFE8F5E9),
+                  backgroundImage: (farmer.userProfileImage.isNotEmpty)
+                      ? NetworkImage(farmer.userProfileImage)
+                      : null,
+                  child: farmer.userProfileImage.isEmpty
+                      ? const Icon(Icons.person, color: Color(0xFF176B2C), size: 28)
+                      : null,
+                ),
+                if (farmer.isVerified)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.verified, color: Color(0xFF176B2C), size: 14),
+                    ),
                   ),
-                  const SizedBox(height: 2),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              farmer.userName.isNotEmpty ? farmer.userName : farmer.farmName,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textDark),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '${farmer.village.isNotEmpty ? farmer.village : 'Village'}, ${farmer.district}',
+              style: const TextStyle(fontSize: 10, color: AppColors.textMedium),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.star_rounded, color: Color(0xFFFFA000), size: 12),
+                  const SizedBox(width: 2),
                   Text(
-                    '₹${vegetable.price.toStringAsFixed(0)} / ${vegetable.priceUnit}',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.primaryGreen),
+                    farmer.rating.toStringAsFixed(1),
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF8D6E63)),
                   ),
                 ],
               ),

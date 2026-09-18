@@ -170,6 +170,27 @@ class CustomerProfileScreen extends StatelessWidget {
                           user?.phone ?? '',
                           style: const TextStyle(fontSize: 13, color: AppColors.textMedium),
                         ),
+                        if ((user?.villageOrTown ?? '').isNotEmpty || (user?.district ?? '').isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on_rounded, size: 13, color: Color(0xFF176B2C)),
+                              const SizedBox(width: 3),
+                              Expanded(
+                                child: Text(
+                                  [
+                                    if ((user?.villageOrTown ?? '').isNotEmpty) user!.villageOrTown,
+                                    if ((user?.district ?? '').isNotEmpty) user!.district,
+                                    if ((user?.state ?? '').isNotEmpty) user!.state,
+                                  ].join(', '),
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF176B2C)),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

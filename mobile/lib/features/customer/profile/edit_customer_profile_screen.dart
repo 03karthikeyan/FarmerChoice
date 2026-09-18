@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/services/image_upload_service.dart';
 
@@ -32,10 +33,34 @@ class _EditCustomerProfileScreenState extends State<EditCustomerProfileScreen> {
     _nameController = TextEditingController(text: user?.name ?? '');
     _phoneController = TextEditingController(text: user?.phone ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
-    _villageController = TextEditingController();
-    _districtController = TextEditingController(text: 'Thanjavur');
-    _stateController = TextEditingController(text: 'Tamil Nadu');
+    _villageController = TextEditingController(text: user?.villageOrTown ?? '');
+    _districtController = TextEditingController(text: user?.district ?? '');
+    _stateController = TextEditingController(text: (user?.state != null && user!.state.isNotEmpty) ? user.state : 'Tamil Nadu');
     _profileImageUrl = user?.profileImage;
+
+    _fetchProfileIfEmpty();
+  }
+
+  Future<void> _fetchProfileIfEmpty() async {
+    try {
+      final res = await ApiClient().dio.get('/customers/profile');
+      if (res.data['success'] == true && res.data['data']?['profile'] != null) {
+        final profile = res.data['data']['profile'];
+        if (mounted) {
+          setState(() {
+            if (_villageController.text.isEmpty && profile['villageOrTown'] != null) {
+              _villageController.text = profile['villageOrTown'];
+            }
+            if (_districtController.text.isEmpty && profile['district'] != null) {
+              _districtController.text = profile['district'];
+            }
+            if ((_stateController.text.isEmpty || _stateController.text == 'Tamil Nadu') && profile['state'] != null) {
+              _stateController.text = profile['state'];
+            }
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   @override

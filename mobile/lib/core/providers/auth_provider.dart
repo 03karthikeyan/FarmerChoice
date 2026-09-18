@@ -49,9 +49,11 @@ class AuthProvider extends ChangeNotifier {
         SocketService().connect();
         notifyListeners();
 
-        // Silently refresh profile in background if farmer
+        // Silently refresh profile in background
         if (_currentUser?.role == 'FARMER') {
           _refreshFarmerProfileSilently();
+        } else if (_currentUser?.role == 'CUSTOMER') {
+          _refreshCustomerProfileSilently();
         }
         return;
       }
@@ -75,7 +77,34 @@ class AuthProvider extends ChangeNotifier {
         }
       }
     } catch (e) {
-      debugPrint('Silent profile refresh skipped: $e');
+      debugPrint('Silent farmer profile refresh skipped: $e');
+    }
+  }
+
+  Future<void> _refreshCustomerProfileSilently() async {
+    try {
+      final res = await ApiClient().dio.get('/customers/profile');
+      if (res.data['success'] == true && res.data['data'] != null) {
+        final profile = res.data['data']['profile'];
+        if (profile is Map<String, dynamic> && _currentUser != null) {
+          final userJson = _currentUser!.toJson();
+          userJson['villageOrTown'] = profile['villageOrTown'] ?? profile['village'] ?? '';
+          userJson['district'] = profile['district'] ?? '';
+          userJson['state'] = profile['state'] ?? 'Tamil Nadu';
+          userJson['defaultDeliveryAddress'] = profile['defaultDeliveryAddress'] ?? '';
+          if (profile['userId'] is Map) {
+            userJson['name'] = profile['userId']['name'] ?? userJson['name'];
+            userJson['phone'] = profile['userId']['phone'] ?? userJson['phone'];
+            userJson['email'] = profile['userId']['email'] ?? userJson['email'];
+            userJson['profileImage'] = profile['userId']['profileImage'] ?? userJson['profileImage'];
+          }
+          _currentUser = UserModel.fromJson(userJson);
+          await StorageService().saveUser(_currentUser!.toJson());
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Silent customer profile refresh skipped: $e');
     }
   }
 
@@ -92,7 +121,14 @@ class AuthProvider extends ChangeNotifier {
 
       if (res.data['success'] == true) {
         final data = res.data['data'];
-        _currentUser = UserModel.fromJson(data['user']);
+        final userMap = Map<String, dynamic>.from(data['user'] ?? {});
+        if (data['profile'] is Map) {
+          userMap['villageOrTown'] = data['profile']['villageOrTown'] ?? data['profile']['village'] ?? '';
+          userMap['district'] = data['profile']['district'] ?? '';
+          userMap['state'] = data['profile']['state'] ?? 'Tamil Nadu';
+          userMap['defaultDeliveryAddress'] = data['profile']['defaultDeliveryAddress'] ?? '';
+        }
+        _currentUser = UserModel.fromJson(userMap);
 
         if (data['profile'] != null && _currentUser!.role == 'FARMER') {
           _farmerProfile = FarmerProfileModel.fromJson(data['profile']);
@@ -165,7 +201,18 @@ class AuthProvider extends ChangeNotifier {
 
       if (res.data['success'] == true) {
         final data = res.data['data'];
-        _currentUser = UserModel.fromJson(data['user']);
+        final userMap = Map<String, dynamic>.from(data['user'] ?? {});
+        userMap['villageOrTown'] = villageOrTown.trim();
+        userMap['district'] = district.trim();
+        userMap['state'] = state.trim();
+        if (data['profile'] is Map) {
+          userMap['villageOrTown'] = data['profile']['villageOrTown'] ?? userMap['villageOrTown'];
+          userMap['district'] = data['profile']['district'] ?? userMap['district'];
+          userMap['state'] = data['profile']['state'] ?? userMap['state'];
+          userMap['defaultDeliveryAddress'] = data['profile']['defaultDeliveryAddress'] ?? '';
+        }
+        _currentUser = UserModel.fromJson(userMap);
+
         await StorageService().saveTokens(
           accessToken: data['accessToken'],
           refreshToken: data['refreshToken'],
@@ -225,7 +272,12 @@ class AuthProvider extends ChangeNotifier {
 
       if (res.data['success'] == true) {
         final data = res.data['data'];
-        _currentUser = UserModel.fromJson(data['user']);
+        final userMap = Map<String, dynamic>.from(data['user'] ?? {});
+        userMap['villageOrTown'] = village.trim();
+        userMap['district'] = district.trim();
+        userMap['state'] = state.trim();
+        _currentUser = UserModel.fromJson(userMap);
+
         if (data['profile'] != null) {
           _farmerProfile = FarmerProfileModel.fromJson(data['profile']);
           await StorageService().saveFarmerProfile(_farmerProfile!.toJson());
@@ -279,7 +331,17 @@ class AuthProvider extends ChangeNotifier {
 
       if (res.data['success'] == true) {
         final data = res.data['data'];
-        _currentUser = UserModel.fromJson(data['user']);
+        final userMap = Map<String, dynamic>.from(data['user'] ?? {});
+        userMap['villageOrTown'] = villageOrTown?.trim() ?? _currentUser?.villageOrTown ?? '';
+        userMap['district'] = district?.trim() ?? _currentUser?.district ?? '';
+        userMap['state'] = state?.trim() ?? _currentUser?.state ?? 'Tamil Nadu';
+        if (data['profile'] is Map) {
+          userMap['villageOrTown'] = data['profile']['villageOrTown'] ?? userMap['villageOrTown'];
+          userMap['district'] = data['profile']['district'] ?? userMap['district'];
+          userMap['state'] = data['profile']['state'] ?? userMap['state'];
+          userMap['defaultDeliveryAddress'] = data['profile']['defaultDeliveryAddress'] ?? '';
+        }
+        _currentUser = UserModel.fromJson(userMap);
         await StorageService().saveUser(_currentUser!.toJson());
         _state = AuthState.authenticated;
         notifyListeners();
@@ -333,7 +395,12 @@ class AuthProvider extends ChangeNotifier {
 
       if (res.data['success'] == true) {
         final data = res.data['data'];
-        _currentUser = UserModel.fromJson(data['user']);
+        final userMap = Map<String, dynamic>.from(data['user'] ?? {});
+        userMap['villageOrTown'] = village?.trim() ?? _currentUser?.villageOrTown ?? '';
+        userMap['district'] = district?.trim() ?? _currentUser?.district ?? '';
+        userMap['state'] = state?.trim() ?? _currentUser?.state ?? 'Tamil Nadu';
+        _currentUser = UserModel.fromJson(userMap);
+
         if (data['profile'] != null) {
           _farmerProfile = FarmerProfileModel.fromJson(data['profile']);
           await StorageService().saveFarmerProfile(_farmerProfile!.toJson());

@@ -18,7 +18,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _villageController = TextEditingController();
-  final _districtController = TextEditingController(text: 'Thanjavur');
+  final _districtController = TextEditingController();
   final _stateController = TextEditingController(text: 'Tamil Nadu');
   bool _obscure = true;
   String? _profileImageUrl;

@@ -15,6 +15,10 @@ class FarmerProfileModel {
   final String verificationStatus; // PENDING, VERIFIED, REJECTED
   final List<String> badges;
   final List<String> farmPhotos;
+  final String userName;
+  final String userPhone;
+  final String userProfileImage;
+  final bool isVerified;
 
   FarmerProfileModel({
     required this.id,
@@ -33,12 +37,33 @@ class FarmerProfileModel {
     this.verificationStatus = 'PENDING',
     this.badges = const [],
     this.farmPhotos = const [],
+    this.userName = '',
+    this.userPhone = '',
+    this.userProfileImage = '',
+    this.isVerified = false,
   });
 
   factory FarmerProfileModel.fromJson(Map<String, dynamic> json) {
+    String uId = '';
+    String uName = '';
+    String uPhone = '';
+    String uProfileImage = '';
+    bool uVerified = false;
+
+    if (json['userId'] is Map<String, dynamic>) {
+      final u = json['userId'];
+      uId = u['_id'] ?? u['id'] ?? '';
+      uName = u['name'] ?? '';
+      uPhone = u['phone'] ?? '';
+      uProfileImage = u['profileImage'] ?? '';
+      uVerified = u['isVerified'] ?? false;
+    } else {
+      uId = json['userId'] ?? '';
+    }
+
     return FarmerProfileModel(
       id: json['_id'] ?? json['id'] ?? '',
-      userId: json['userId'] is Map ? json['userId']['_id'] : (json['userId'] ?? ''),
+      userId: uId,
       farmName: json['farmName'] ?? '',
       village: json['village'] ?? '',
       taluk: json['taluk'] ?? '',
@@ -53,6 +78,10 @@ class FarmerProfileModel {
       verificationStatus: json['verificationStatus'] ?? 'PENDING',
       badges: json['badges'] != null ? List<String>.from(json['badges']) : [],
       farmPhotos: json['farmPhotos'] != null ? List<String>.from(json['farmPhotos']) : [],
+      userName: uName.isNotEmpty ? uName : (json['userName'] ?? json['farmName'] ?? 'Farmer'),
+      userPhone: uPhone,
+      userProfileImage: uProfileImage,
+      isVerified: uVerified || (json['verificationStatus'] == 'VERIFIED'),
     );
   }
 
@@ -74,6 +103,10 @@ class FarmerProfileModel {
       'verificationStatus': verificationStatus,
       'badges': badges,
       'farmPhotos': farmPhotos,
+      'userName': userName,
+      'userPhone': userPhone,
+      'userProfileImage': userProfileImage,
+      'isVerified': isVerified,
     };
   }
 }

@@ -103,7 +103,10 @@ class _VegetableSearchScreenState extends State<VegetableSearchScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => VegetableDetailScreen(vegetableId: veg.id),
+                              builder: (_) => VegetableDetailScreen(
+                                vegetableId: veg.id,
+                                initialVegetable: veg,
+                              ),
                             ),
                           );
                         },

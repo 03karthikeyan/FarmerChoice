@@ -9,14 +9,20 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/chat_provider.dart';
 import '../../../core/widgets/verified_badge.dart';
 import '../../../core/widgets/vegetable_card.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../chat/chat_screen.dart';
 import '../vegetables/vegetable_detail_screen.dart';
 import '../reviews/add_review_screen.dart';
 
 class FarmerProfileScreen extends StatefulWidget {
   final String farmerId;
+  final FarmerProfileModel? initialProfile;
 
-  const FarmerProfileScreen({super.key, required this.farmerId});
+  const FarmerProfileScreen({
+    super.key,
+    required this.farmerId,
+    this.initialProfile,
+  });
 
   @override
   State<FarmerProfileScreen> createState() => _FarmerProfileScreenState();
@@ -33,6 +39,14 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialProfile != null) {
+      _profile = widget.initialProfile;
+      _farmerUser = {
+        'name': widget.initialProfile!.userName,
+        'profileImage': widget.initialProfile!.userProfileImage,
+      };
+      _isLoading = false;
+    }
     _fetchFarmerDetails();
   }
 
@@ -105,11 +119,55 @@ class _FarmerProfileScreenState extends State<FarmerProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF7FAF7),
-        body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF176B2C)),
+    if (_isLoading && _profile == null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF7FAF7),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: Shimmer(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE2EBE2)),
+                  ),
+                  child: Row(
+                    children: [
+                      const ShimmerLoading.circular(size: 68),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            ShimmerLoading(width: 140, height: 18, borderRadius: 6),
+                            SizedBox(height: 8),
+                            ShimmerLoading(width: 100, height: 12, borderRadius: 4),
+                            SizedBox(height: 8),
+                            ShimmerLoading(width: 80, height: 16, borderRadius: 6),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const ShimmerLoading(width: double.infinity, height: 120, borderRadius: 20),
+                const SizedBox(height: 16),
+                const ShimmerLoading(width: double.infinity, height: 180, borderRadius: 20),
+              ],
+            ),
+          ),
         ),
       );
     }

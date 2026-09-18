@@ -107,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
               top: 0,
               left: 0,
               right: 0,
-              height: size.height * 0.38,
+              height: size.height * 0.35,
               child: Image.asset(
                 'assets/images/login_hero_top.png',
                 fit: BoxFit.cover,
