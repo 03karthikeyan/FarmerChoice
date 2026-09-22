@@ -17,6 +17,8 @@ class VegetableCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isOutOfStock = vegetable.isOutOfStock;
+    final isLimited = vegetable.isLimitedStock;
     final image = vegetable.images.isNotEmpty
         ? vegetable.images[0]
         : '';
@@ -28,9 +30,12 @@ class VegetableCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isOutOfStock ? const Color(0xFFFAFAFA) : Colors.white,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.borderLight, width: 1.2),
+          border: Border.all(
+            color: isOutOfStock ? const Color(0xFFEF9A9A) : AppColors.borderLight,
+            width: isOutOfStock ? 1.4 : 1.2,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.02),
@@ -42,32 +47,37 @@ class VegetableCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Image
+            // Image with Badges
             ClipRRect(
               borderRadius: BorderRadius.circular(14),
               child: Stack(
                 children: [
-                  CachedNetworkImage(
-                    imageUrl: image,
-                    width: 90,
-                    height: 90,
-                    fit: BoxFit.cover,
-                    placeholder: (c, u) => Container(
+                  ColorFiltered(
+                    colorFilter: isOutOfStock
+                        ? const ColorFilter.mode(Colors.grey, BlendMode.saturation)
+                        : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
+                    child: CachedNetworkImage(
+                      imageUrl: image,
                       width: 90,
                       height: 90,
-                      color: AppColors.lightGreenBg,
-                      child: const Center(
-                        child: Icon(Icons.eco, color: AppColors.primaryGreen, size: 24),
+                      fit: BoxFit.cover,
+                      placeholder: (c, u) => Container(
+                        width: 90,
+                        height: 90,
+                        color: AppColors.lightGreenBg,
+                        child: const Center(
+                          child: Icon(Icons.eco, color: AppColors.primaryGreen, size: 24),
+                        ),
+                      ),
+                      errorWidget: (c, u, e) => Container(
+                        width: 90,
+                        height: 90,
+                        color: AppColors.lightGreenBg,
+                        child: const Icon(Icons.eco, color: AppColors.primaryGreen),
                       ),
                     ),
-                    errorWidget: (c, u, e) => Container(
-                      width: 90,
-                      height: 90,
-                      color: AppColors.lightGreenBg,
-                      child: const Icon(Icons.eco, color: AppColors.primaryGreen),
-                    ),
                   ),
-                  if (vegetable.isOrganic)
+                  if (vegetable.isOrganic && !isOutOfStock)
                     Positioned(
                       top: 4,
                       left: 4,
@@ -83,6 +93,30 @@ class VegetableCard extends StatelessWidget {
                             color: Colors.white,
                             fontSize: 8.5,
                             fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (isOutOfStock)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withOpacity(0.45),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD32F2F),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'OUT OF STOCK',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -103,10 +137,10 @@ class VegetableCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           vegetable.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textDark,
+                            color: isOutOfStock ? AppColors.textMedium : AppColors.textDark,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -114,10 +148,10 @@ class VegetableCard extends StatelessWidget {
                       ),
                       Text(
                         '₹${vegetable.price.toStringAsFixed(0)} / ${vegetable.priceUnit}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.primaryGreen,
+                          color: isOutOfStock ? AppColors.textLight : AppColors.primaryGreen,
                         ),
                       ),
                     ],
@@ -126,9 +160,9 @@ class VegetableCard extends StatelessWidget {
                     const SizedBox(height: 1),
                     Text(
                       vegetable.tamilName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.primaryLight,
+                        color: isOutOfStock ? AppColors.textLight : AppColors.primaryLight,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -163,16 +197,40 @@ class VegetableCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                         decoration: BoxDecoration(
-                          color: AppColors.lightGreenBg,
+                          color: isOutOfStock
+                              ? const Color(0xFFFFEBEE)
+                              : isLimited
+                                  ? const Color(0xFFFFF3E0)
+                                  : AppColors.lightGreenBg,
                           borderRadius: BorderRadius.circular(6),
+                          border: isOutOfStock
+                              ? Border.all(color: const Color(0xFFFFCDD2), width: 0.8)
+                              : null,
                         ),
-                        child: Text(
-                          '${vegetable.availableQuantity.toStringAsFixed(0)} ${vegetable.priceUnit} Available',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primaryGreen,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isOutOfStock) ...[
+                              const Icon(Icons.block, size: 10, color: Color(0xFFD32F2F)),
+                              const SizedBox(width: 3),
+                            ],
+                            Text(
+                              isOutOfStock
+                                  ? 'Out of Stock'
+                                  : isLimited
+                                      ? 'Only ${vegetable.availableQuantity.toStringAsFixed(0)} ${vegetable.priceUnit} left'
+                                      : '${vegetable.availableQuantity.toStringAsFixed(0)} ${vegetable.priceUnit} Available',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: isOutOfStock
+                                    ? const Color(0xFFD32F2F)
+                                    : isLimited
+                                        ? const Color(0xFFE65100)
+                                        : AppColors.primaryGreen,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       Row(
@@ -197,7 +255,7 @@ class VegetableCard extends StatelessWidget {
                           ElevatedButton(
                             onPressed: onTap,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primaryGreen,
+                              backgroundColor: isOutOfStock ? const Color(0xFF757575) : AppColors.primaryGreen,
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -205,9 +263,9 @@ class VegetableCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            child: const Text(
-                              'View',
-                              style: TextStyle(
+                            child: Text(
+                              isOutOfStock ? 'Details' : 'View',
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,

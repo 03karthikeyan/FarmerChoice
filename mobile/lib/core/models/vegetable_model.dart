@@ -64,4 +64,7 @@ class VegetableModel {
       farmerProfile: profileObj,
     );
   }
+
+  bool get isOutOfStock => availabilityStatus == 'OUT_OF_STOCK' || availableQuantity <= 0;
+  bool get isLimitedStock => !isOutOfStock && (availabilityStatus == 'LIMITED_STOCK' || availableQuantity <= 5);
 }

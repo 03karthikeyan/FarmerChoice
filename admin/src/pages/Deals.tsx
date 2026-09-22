@@ -77,7 +77,19 @@ export const Deals: React.FC = () => {
                       {deal.farmerId?.name}
                     </td>
                     <td className="px-6 py-4 text-xs font-semibold text-slate-800">
-                      {deal.customerId?.name}
+                      <div>{deal.customerId?.name}</div>
+                      <div className="mt-1">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          deal.deliveryMethod === 'DELIVERY' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {deal.deliveryMethod === 'DELIVERY' ? '🚚 Direct Delivery' : '🏡 Pickup'}
+                        </span>
+                      </div>
+                      {deal.deliveryMethod === 'DELIVERY' && deal.deliveryAddress && (
+                        <p className="text-[10px] text-slate-500 mt-0.5 truncate max-w-[150px]" title={deal.deliveryAddress}>
+                          📍 {deal.deliveryAddress}
+                        </p>
+                      )}
                     </td>
                     <td className="px-6 py-4 font-bold text-slate-900">
                       ₹{deal.dealReferenceValue}

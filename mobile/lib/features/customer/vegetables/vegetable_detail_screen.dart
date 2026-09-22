@@ -130,11 +130,59 @@ class _VegetableDetailScreenState extends State<VegetableDetailScreen> {
               ),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              background: CachedNetworkImage(
-                imageUrl: image,
-                fit: BoxFit.cover,
-                placeholder: (c, u) => Container(color: AppColors.lightGreenBg),
-                errorWidget: (c, u, e) => Container(color: AppColors.lightGreenBg, child: const Icon(Icons.eco)),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ColorFiltered(
+                    colorFilter: veg.isOutOfStock
+                        ? const ColorFilter.mode(Colors.grey, BlendMode.saturation)
+                        : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
+                    child: CachedNetworkImage(
+                      imageUrl: image,
+                      fit: BoxFit.cover,
+                      placeholder: (c, u) => Container(color: AppColors.lightGreenBg),
+                      errorWidget: (c, u, e) => Container(color: AppColors.lightGreenBg, child: const Icon(Icons.eco)),
+                    ),
+                  ),
+                  if (veg.isOutOfStock)
+                    Positioned.fill(
+                      child: Container(
+                        color: Colors.black.withOpacity(0.35),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD32F2F),
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(Icons.block, color: Colors.white, size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'CURRENTLY OUT OF STOCK',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
@@ -157,20 +205,20 @@ class _VegetableDetailScreenState extends State<VegetableDetailScreen> {
                           children: [
                             Text(
                               veg.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textDark,
+                                color: veg.isOutOfStock ? AppColors.textMedium : AppColors.textDark,
                               ),
                             ),
                             if (veg.tamilName.isNotEmpty) ...[
                               const SizedBox(height: 2),
                               Text(
                                 veg.tamilName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.primaryLight,
+                                  color: veg.isOutOfStock ? AppColors.textLight : AppColors.primaryLight,
                                 ),
                               ),
                             ],
@@ -180,15 +228,15 @@ class _VegetableDetailScreenState extends State<VegetableDetailScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppColors.lightGreenBg,
+                          color: veg.isOutOfStock ? const Color(0xFFEEEEEE) : AppColors.lightGreenBg,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           '₹${veg.price.toStringAsFixed(0)} / ${veg.priceUnit}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.primaryGreen,
+                            color: veg.isOutOfStock ? AppColors.textLight : AppColors.primaryGreen,
                           ),
                         ),
                       ),
@@ -200,18 +248,48 @@ class _VegetableDetailScreenState extends State<VegetableDetailScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE8F5E9),
+                          color: veg.isOutOfStock
+                              ? const Color(0xFFFFEBEE)
+                              : veg.isLimitedStock
+                                  ? const Color(0xFFFFF3E0)
+                                  : const Color(0xFFE8F5E9),
                           borderRadius: BorderRadius.circular(8),
+                          border: veg.isOutOfStock
+                              ? Border.all(color: const Color(0xFFFFCDD2), width: 0.8)
+                              : null,
                         ),
-                        child: Text(
-                          '${veg.availableQuantity.toStringAsFixed(0)} ${veg.priceUnit} Available',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primaryGreen,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              veg.isOutOfStock ? Icons.block : Icons.inventory_2_outlined,
+                              size: 13,
+                              color: veg.isOutOfStock
+                                  ? const Color(0xFFD32F2F)
+                                  : veg.isLimitedStock
+                                      ? const Color(0xFFE65100)
+                                      : AppColors.primaryGreen,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              veg.isOutOfStock
+                                  ? 'Out of Stock'
+                                  : veg.isLimitedStock
+                                      ? 'Limited: Only ${veg.availableQuantity.toStringAsFixed(0)} ${veg.priceUnit} left'
+                                      : '${veg.availableQuantity.toStringAsFixed(0)} ${veg.priceUnit} Available',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: veg.isOutOfStock
+                                    ? const Color(0xFFD32F2F)
+                                    : veg.isLimitedStock
+                                        ? const Color(0xFFE65100)
+                                        : AppColors.primaryGreen,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -233,7 +311,42 @@ class _VegetableDetailScreenState extends State<VegetableDetailScreen> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
+
+                  if (veg.isOutOfStock) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFEBEE),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFFCDD2)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Icon(Icons.warning_amber_rounded, color: Color(0xFFD32F2F), size: 20),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Product Currently Out of Stock',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFFD32F2F)),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'This crop is currently sold out or out of stock. You can tap Chat below to contact the farmer about upcoming harvest dates.',
+                                  style: TextStyle(fontSize: 11, color: Color(0xFFB71C1C), height: 1.3),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Description
                   if (veg.description.isNotEmpty) ...[
@@ -456,7 +569,7 @@ class _VegetableDetailScreenState extends State<VegetableDetailScreen> {
                         customerId: authProvider.currentUser!.id,
                         vegetableId: veg.id,
                       );
-                      if (convId != null && mounted) {
+                      if (convId != null && context.mounted) {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -483,21 +596,31 @@ class _VegetableDetailScreenState extends State<VegetableDetailScreen> {
               Expanded(
                 flex: 3,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-                      ),
-                      builder: (_) => RequestDealModal(vegetable: veg),
-                    );
-                  },
-                  icon: const Icon(Icons.handshake_outlined, size: 18, color: Colors.white),
-                  label: const Text('Request Deal', style: TextStyle(fontSize: 14, color: Colors.white)),
+                  onPressed: veg.isOutOfStock
+                      ? null
+                      : () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                            ),
+                            builder: (_) => RequestDealModal(vegetable: veg),
+                          );
+                        },
+                  icon: Icon(
+                    veg.isOutOfStock ? Icons.block : Icons.handshake_outlined,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    veg.isOutOfStock ? 'Out of Stock' : 'Request Deal',
+                    style: const TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w700),
+                  ),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: AppColors.primaryGreen,
+                    backgroundColor: veg.isOutOfStock ? const Color(0xFF9E9E9E) : AppColors.primaryGreen,
+                    disabledBackgroundColor: const Color(0xFFBDBDBD),
                   ),
                 ),
               ),

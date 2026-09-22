@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../models/deal_model.dart';
 import '../network/api_client.dart';
@@ -5,10 +6,12 @@ import '../network/api_client.dart';
 class DealProvider extends ChangeNotifier {
   List<DealModel> _myDeals = [];
   bool _isLoading = false;
+  String _errorMessage = '';
   String _selectedTab = 'All';
 
   List<DealModel> get myDeals => _myDeals;
   bool get isLoading => _isLoading;
+  String get errorMessage => _errorMessage;
   String get selectedTab => _selectedTab;
 
   List<DealModel> get filteredDeals {
@@ -23,6 +26,7 @@ class DealProvider extends ChangeNotifier {
 
   Future<void> fetchMyDeals({String role = 'customer'}) async {
     _isLoading = true;
+    _errorMessage = '';
     notifyListeners();
 
     try {
@@ -31,8 +35,12 @@ class DealProvider extends ChangeNotifier {
         final List list = res.data['data'];
         _myDeals = list.map((json) => DealModel.fromJson(json)).toList();
       }
+    } on DioException catch (e) {
+      _errorMessage = e.response?.data?['message'] ?? e.message ?? 'Failed to load deals.';
+      debugPrint('Error fetching deals: $_errorMessage');
     } catch (e) {
-      debugPrint('Error fetching deals: $e');
+      _errorMessage = 'Error fetching deals: $e';
+      debugPrint(_errorMessage);
     }
 
     _isLoading = false;
@@ -47,6 +55,7 @@ class DealProvider extends ChangeNotifier {
     String deliveryAddress = '',
     String customerNote = '',
   }) async {
+    _errorMessage = '';
     try {
       final res = await ApiClient().dio.post('/deals/request', data: {
         'vegetableId': vegetableId,
@@ -60,10 +69,17 @@ class DealProvider extends ChangeNotifier {
       if (res.data['success'] == true) {
         await fetchMyDeals(role: 'customer');
         return true;
+      } else {
+        _errorMessage = res.data['message'] ?? 'Failed to submit deal request.';
       }
+    } on DioException catch (e) {
+      _errorMessage = e.response?.data?['message'] ?? e.message ?? 'Server error creating deal request.';
+      debugPrint('Error creating deal request: $_errorMessage');
     } catch (e) {
-      debugPrint('Error creating deal request: $e');
+      _errorMessage = 'Error creating deal request: $e';
+      debugPrint(_errorMessage);
     }
+    notifyListeners();
     return false;
   }
 
