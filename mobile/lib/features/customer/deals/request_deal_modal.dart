@@ -140,19 +140,24 @@ class _RequestDealModalState extends State<RequestDealModal> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Direct Deal Request',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textDark),
-                    ),
-                    Text(
-                      'Item: ${veg.name} (Farmer: ${veg.farmer?.name ?? 'Farmer'})',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textMedium),
-                    ),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Direct Deal Request',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textDark),
+                      ),
+                      Text(
+                        'Item: ${veg.name} (Farmer: ${veg.farmer?.name ?? 'Farmer'})',
+                        style: const TextStyle(fontSize: 12, color: AppColors.textMedium),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
@@ -203,26 +208,31 @@ class _RequestDealModalState extends State<RequestDealModal> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Requested Quantity',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textDark),
-                      ),
-                      Text(
-                        veg.isOutOfStock
-                            ? '0 ${veg.priceUnit} in stock'
-                            : 'Price: ₹${veg.price.toStringAsFixed(0)} / ${veg.priceUnit} (Max: ${veg.availableQuantity.toStringAsFixed(0)})',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: veg.isOutOfStock ? const Color(0xFFD32F2F) : AppColors.textMedium,
-                          fontWeight: veg.isOutOfStock ? FontWeight.w700 : FontWeight.normal,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Requested Quantity',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textDark),
                         ),
-                      ),
-                    ],
+                        Text(
+                          veg.isOutOfStock
+                              ? '0 ${veg.priceUnit} in stock'
+                              : 'Price: ₹${veg.price.toStringAsFixed(0)} / ${veg.priceUnit} (Max: ${veg.availableQuantity.toStringAsFixed(0)})',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: veg.isOutOfStock ? const Color(0xFFD32F2F) : AppColors.textMedium,
+                            fontWeight: veg.isOutOfStock ? FontWeight.w700 : FontWeight.normal,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         onPressed: (!veg.isOutOfStock && _quantity > 1)
@@ -253,7 +263,7 @@ class _RequestDealModalState extends State<RequestDealModal> {
               decoration: BoxDecoration(
                 color: AppColors.lightGreenBg,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.primaryGreen.withOpacity(0.2)),
+                border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.2)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

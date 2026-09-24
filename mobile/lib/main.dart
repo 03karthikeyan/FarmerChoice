@@ -11,7 +11,9 @@ import 'core/providers/chat_provider.dart';
 import 'core/providers/farmer_provider.dart';
 import 'core/providers/notification_provider.dart';
 import 'core/services/notification_service.dart';
-import 'features/splash/splash_screen.dart';
+import 'features/auth/login_screen.dart';
+import 'features/customer/customer_main_screen.dart';
+import 'features/farmer/farmer_main_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,10 +26,13 @@ void main() async {
   }
   await StorageService().init();
 
+  final authProvider = AuthProvider();
+  await authProvider.checkAuthSession();
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(create: (_) => VegetableProvider()),
         ChangeNotifierProvider(create: (_) => DealProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
@@ -49,8 +54,28 @@ class FarmerChoiceApp extends StatelessWidget {
       title: 'Farmer Choice',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const SplashScreen(),
+      home: const AuthGate(),
     );
   }
 }
 
+/// Automatically opens directly into Farmer/Customer Screen or Login Screen
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        if (auth.isAuthenticated && auth.currentUser != null) {
+          if (auth.isFarmer) {
+            return const FarmerMainScreen();
+          } else {
+            return const CustomerMainScreen();
+          }
+        }
+        return const LoginScreen();
+      },
+    );
+  }
+}

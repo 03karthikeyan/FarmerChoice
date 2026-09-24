@@ -16,10 +16,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.mediawave.farmerchoice"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -38,6 +35,40 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            val output = this
+            if (output is com.android.build.gradle.internal.api.BaseVariantOutputImpl) {
+                val vName = variant.versionName ?: "1.0.0"
+                val abi = output.getFilter(com.android.build.OutputFile.ABI)
+                if (abi != null) {
+                    output.outputFileName = "farmer_choice-${abi}-v${vName}.apk"
+                } else {
+                    output.outputFileName = "farmer_choice-v${vName}.apk"
+                }
+            }
+        }
+    }
+}
+
+tasks.register("copyFarmerChoiceApks") {
+    doLast {
+        val apkDir = File(layout.buildDirectory.asFile.get(), "outputs/apk/release")
+        val flutterApkDir = File(layout.buildDirectory.asFile.get(), "outputs/flutter-apk")
+        if (apkDir.exists()) {
+            apkDir.listFiles()?.forEach { file ->
+                if (file.name.endsWith(".apk")) {
+                    file.copyTo(File(flutterApkDir, file.name), overwrite = true)
+                }
+            }
+        }
+    }
+}
+
+tasks.matching { it.name.startsWith("assemble") }.configureEach {
+    finalizedBy("copyFarmerChoiceApks")
 }
 
 kotlin {

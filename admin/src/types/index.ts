@@ -57,7 +57,7 @@ export interface Vegetable {
   price: number;
   priceUnit: string;
   availableQuantity: number;
-  availabilityStatus: 'AVAILABLE_NOW' | 'LIMITED_STOCK' | 'OUT_OF_STOCK' | 'AVAILABLE_FROM_DATE';
+  availabilityStatus: 'AVAILABLE_NOW' | 'LIMITED_STOCK' | 'OUT_OF_STOCK' | 'AVAILABLE_FROM_DATE' | 'HARVESTING_SOON';
   featuredStatus: 'NONE' | 'REQUESTED' | 'APPROVED' | 'REJECTED';
   featuredUntil?: string;
   status: 'ACTIVE' | 'HIDDEN' | 'SUSPENDED';
